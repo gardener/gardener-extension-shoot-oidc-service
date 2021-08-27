@@ -1,0 +1,34 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Gardener gardener-extension-shoot-oidc-service
+Upstream-Contact: The Gardener project <gardener@googlegroups.com>
+Source: https://github.com/gardener/gardener-extension-shoot-oidc-service
+Comment: 
+
+# --------------------------------------------------
+# declare copyright and license of files which can't carry license headers
+# --------------------------------------------------
+# source code
+Files: 
+  .gitignore
+  CODEOWNERS
+  go.mod
+  go.sum
+  *.json
+  VERSION
+Copyright: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+License: Apache-2.0
+
+# --------------------------------------------------
+# documentation
+Files:
+  docs/**
+  *.md
+Copyright: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+License: CC-BY-4.0
+
+# --------------------------------------------------
+# source (vendored) dependencies
+#
+# Files: <relative path to vendored component>
+# Copyright: <vendored component's copyright>
+# License: <vendored component's license>
