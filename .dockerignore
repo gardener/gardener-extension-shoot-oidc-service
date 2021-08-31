@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Ignore everything
+**
+
+# Exclude folders relevant for build
+!charts/
+!cmd/
+!example/
+!hack/
+!pkg/
+!test/
+!vendor/
+
+
+!go.mod
+!go.sum
+
+!VERSION
+!Makefile
