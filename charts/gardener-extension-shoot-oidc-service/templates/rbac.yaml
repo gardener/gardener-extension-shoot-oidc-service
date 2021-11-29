@@ -15,7 +15,7 @@ rules:
   - apps
   resources:
   - deployments
-  esourceNames:
+  resourceNames:
   - kube-apiserver
   verbs:
   - get
@@ -68,27 +68,27 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - "configmaps"
-  - "secrets"
-  - "events"
+  - configmaps
+  - secrets
+  - events
   verbs:
   - "*"
 - apiGroups:
-    - coordination.k8s.io
+  - coordination.k8s.io
   resources:
-    - leases
+  - leases
   verbs:
-    - create
+  - create
 - apiGroups:
-    - coordination.k8s.io
+  - coordination.k8s.io
   resources:
-    - leases
+  - leases
   resourceNames:
-    - {{ include "leaderelectionid" . }}
+  - {{ include "leaderelectionid" . }}
   verbs:
-    - update
-    - get
-    - watch
+  - update
+  - get
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
