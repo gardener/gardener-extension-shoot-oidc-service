@@ -1,0 +1,10 @@
+---
+type: helm.io/chart
+name: gardener-extension-shoot-oidc-service-chart
+relation: local
+input:
+  type: dir
+  path: ../charts/gardener-extension-shoot-oidc-service
+  compress: true
+  preserveDir: true
+...
