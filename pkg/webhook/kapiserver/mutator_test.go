@@ -6,7 +6,9 @@ package kapiserver
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/constants"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -16,26 +18,40 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
-const namespace = "test"
-
 var _ = Describe("Mutator", func() {
 
-	checkDeploymentIsCorrectlyMutated := func(deployment *appsv1.Deployment) {
-		// Check that the kube-apiserver container still exists
-		c := extensionswebhook.ContainerWithName(deployment.Spec.Template.Spec.Containers, v1beta1constants.DeploymentNameKubeAPIServer)
-		Expect(c).To(Not(BeNil()))
-
-		Expect(c.Command).To(ContainElement("--authentication-token-webhook-cache-ttl=10s"))
-		Expect(c.Command).To(ContainElement("--authentication-token-webhook-config-file=/var/run/gardener/oidc-webhook/kubeconfig"))
-	}
+	const (
+		namespace     = "test"
+		cacheElement  = "--authentication-token-webhook-cache-ttl=0"
+		configElement = "--authentication-token-webhook-config-file=/var/run/secrets/oidc-webhook/authenticator/kubeconfig"
+	)
 
 	var (
 		ctrl *gomock.Controller
-		ctx  = context.TODO()
+		ctx  = context.Background()
+
+		checkDeploymentIsCorrectlyMutated = func(deployment *appsv1.Deployment) {
+			// Check that the kube-apiserver container still exists
+			c := extensionswebhook.ContainerWithName(deployment.Spec.Template.Spec.Containers, v1beta1constants.DeploymentNameKubeAPIServer)
+			Expect(c).To(Not(BeNil()))
+
+			Expect(c.Command).To(ContainElement(cacheElement))
+			Expect(c.Command).To(ContainElement(configElement))
+		}
+		checkDeploymentIsNotMutated = func(deployment *appsv1.Deployment) {
+			// Check that the kube-apiserver container still exists
+			c := extensionswebhook.ContainerWithName(deployment.Spec.Template.Spec.Containers, v1beta1constants.DeploymentNameKubeAPIServer)
+			Expect(c).To(Not(BeNil()))
+
+			Expect(c.Command).NotTo(ContainElement(cacheElement))
+			Expect(c.Command).NotTo(ContainElement(configElement))
+		}
 	)
 
 	BeforeEach(func() {
@@ -48,9 +64,15 @@ var _ = Describe("Mutator", func() {
 
 	Describe("MutateKubeAPIServerDeployments", func() {
 		var (
-			client     *mockclient.MockClient
-			deployment *appsv1.Deployment
-			ensurer    genericmutator.Ensurer
+			client               *mockclient.MockClient
+			deployment           *appsv1.Deployment
+			ensurer              genericmutator.Ensurer
+			secretNamespacedName = types.NamespacedName{
+				Namespace: namespace,
+				Name:      constants.WebhookKubeConfigSecretName,
+			}
+			errNotFound = &apierrors.StatusError{ErrStatus: metav1.Status{Reason: metav1.StatusReasonNotFound}}
+			errInternal = fmt.Errorf("internal error")
 		)
 
 		BeforeEach(func() {
@@ -77,6 +99,7 @@ var _ = Describe("Mutator", func() {
 		})
 
 		It("should add missing flags to a kube-apiserver pod", func() {
+			client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(nil)
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
 			Expect(err).NotTo(HaveOccurred())
 			checkDeploymentIsCorrectlyMutated(deployment)
@@ -88,10 +111,25 @@ var _ = Describe("Mutator", func() {
 				"--authentication-token-webhook-config-file=?",
 			}
 
+			client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(nil)
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
 			Expect(err).NotTo(HaveOccurred())
 			checkDeploymentIsCorrectlyMutated(deployment)
 		})
-	})
 
+		It("should not add flags to a kube-apiserver pod if webhook secret does not exist", func() {
+			client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(errNotFound)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
+			Expect(err).NotTo(HaveOccurred())
+			checkDeploymentIsNotMutated(deployment)
+		})
+
+		It("should not add flags to a kube-apiserver pod and return error if fails to get webhook secret and error is different from not found", func() {
+			client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(errInternal)
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(errInternal.Error()))
+			checkDeploymentIsNotMutated(deployment)
+		})
+	})
 })
