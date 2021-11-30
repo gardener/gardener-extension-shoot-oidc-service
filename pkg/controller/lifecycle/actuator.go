@@ -51,7 +51,7 @@ const (
 	ActuatorName = service.ServiceName + "-actuator"
 )
 
-//go:embed authentication.gardener.cloud_openidconnects.yaml
+//go:embed templates/authentication.gardener.cloud_openidconnects.yaml
 var crdContent string
 
 // NewActuator returns an actuator responsible for Extension resources.
