@@ -78,7 +78,7 @@ func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hib
 
 	oidcDeployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.SeedResourcesName,
+			Name:      constants.ApplicationName,
 			Namespace: namespace,
 		},
 	}
@@ -113,7 +113,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
-	oidcShootAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.SeedResourcesName, namespace)
+	oidcShootAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.ApplicationName, namespace)
 	if err := oidcShootAccessSecret.Reconcile(ctx, a.client); err != nil {
 		return err
 	}
@@ -135,12 +135,12 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 
 	tlsSecret, err := a.getOrCreateTLSSecret(ctx, secrets.CertificateSecretConfig{
 		Name:       constants.WebhookTLSecretName,
-		CommonName: constants.SeedResourcesName,
+		CommonName: constants.ApplicationName,
 		DNSNames: []string{
-			constants.SeedResourcesName,
-			fmt.Sprintf("%s.%s", constants.SeedResourcesName, namespace),
-			fmt.Sprintf("%s.%s.svc", constants.SeedResourcesName, namespace),
-			fmt.Sprintf("%s.%s.svc.cluster.local", constants.SeedResourcesName, namespace),
+			constants.ApplicationName,
+			fmt.Sprintf("%s.%s", constants.ApplicationName, namespace),
+			fmt.Sprintf("%s.%s.svc", constants.ApplicationName, namespace),
+			fmt.Sprintf("%s.%s.svc.cluster.local", constants.ApplicationName, namespace),
 		},
 	}, namespace)
 
@@ -191,8 +191,7 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 
 	for _, name := range []string{
 		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
-		gutil.SecretNamePrefixShootAccess + constants.SeedResourcesName,
-		constants.ShootResourcesName,
+		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
 		constants.WebhookTLSecretName,
 	} {
 		if err := a.deleteSecret(ctx, name, namespace); err != nil {
@@ -303,7 +302,7 @@ func (a *actuator) getOrCreateTLSSecret(ctx context.Context, certificateConfig s
 
 func getLabels() map[string]string {
 	return map[string]string{
-		"app.kubernetes.io/name": constants.SeedResourcesName,
+		"app.kubernetes.io/name": constants.ApplicationName,
 	}
 }
 
@@ -320,23 +319,23 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 
 	kubeConfig := &configv1.Config{
 		Clusters: []configv1.NamedCluster{{
-			Name: constants.SeedResourcesName,
+			Name: constants.ApplicationName,
 			Cluster: configv1.Cluster{
-				Server:                fmt.Sprintf("https://%s.%s/validate-token", constants.SeedResourcesName, namespace),
+				Server:                fmt.Sprintf("https://%s.%s/validate-token", constants.ApplicationName, namespace),
 				CertificateAuthority:  "/var/run/secrets/oidc-webhook/token-validator/ca.crt",
 				InsecureSkipTLSVerify: false,
 			},
 		}},
 		Contexts: []configv1.NamedContext{{
-			Name: constants.SeedResourcesName,
+			Name: constants.ApplicationName,
 			Context: configv1.Context{
-				Cluster:  constants.SeedResourcesName,
-				AuthInfo: constants.SeedResourcesName,
+				Cluster:  constants.ApplicationName,
+				AuthInfo: constants.ApplicationName,
 			},
 		}},
-		CurrentContext: constants.SeedResourcesName,
+		CurrentContext: constants.ApplicationName,
 		AuthInfos: []configv1.NamedAuthInfo{{
-			Name: constants.SeedResourcesName,
+			Name: constants.ApplicationName,
 			AuthInfo: configv1.AuthInfo{
 				TokenFile: "/var/run/secrets/oidc-webhook/token-validator/token",
 			},
@@ -355,7 +354,7 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 
 	oidcDeployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.SeedResourcesName,
+			Name:      constants.ApplicationName,
 			Namespace: namespace,
 			Labels:    getLabels(),
 		},
@@ -392,9 +391,9 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 							}},
 						},
 					},
-					ServiceAccountName: constants.SeedResourcesName,
+					ServiceAccountName: constants.ApplicationName,
 					Containers: []corev1.Container{{
-						Name:            constants.SeedResourcesName,
+						Name:            constants.ApplicationName,
 						Image:           image.String(),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Args: []string{
@@ -459,21 +458,21 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 	resources, err := registry.AddAllAndSerialize(
 		&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SeedResourcesName,
+				Name:      constants.ApplicationName,
 				Namespace: namespace,
 				Labels:    getLabels(),
 			},
 		},
 		&autoscalingv2beta1.HorizontalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SeedResourcesName,
+				Name:      constants.ApplicationName,
 				Namespace: namespace,
 			},
 			Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
 				ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
 					APIVersion: appsv1.SchemeGroupVersion.String(),
 					Kind:       "Deployment",
-					Name:       constants.SeedResourcesName,
+					Name:       constants.ApplicationName,
 				},
 				MinReplicas: pointer.Int32(1),
 				MaxReplicas: 3,
@@ -491,7 +490,7 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 		oidcDeployment,
 		&corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SeedResourcesName,
+				Name:      constants.ApplicationName,
 				Namespace: namespace,
 				Labels:    getLabels(),
 			},
@@ -510,7 +509,7 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 		},
 		&networkingv1.NetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SeedResourcesName + "-allow-kube-apiserver",
+				Name:      constants.ApplicationName + "-allow-kube-apiserver",
 				Namespace: namespace,
 				Labels:    getLabels(),
 			},
@@ -566,7 +565,7 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName, tokenValidatorServiceAccountName string) (map[string][]byte, error) {
 	failPolicy := admissionregistration.Fail
 	sideEffectClass := admissionregistration.SideEffectClassNone
-	validatingWebhookUrl := fmt.Sprintf("https://%s.%s/webhooks/validating", constants.SeedResourcesName, namespace)
+	validatingWebhookUrl := fmt.Sprintf("https://%s.%s/webhooks/validating", constants.ApplicationName, namespace)
 
 	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 	shootResources, err := shootRegistry.AddAllAndSerialize(
@@ -669,7 +668,7 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 		},
 		&admissionregistration.ValidatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   constants.ShootResourcesName,
+				Name:   constants.WebhookConfigurationName,
 				Labels: getLabels(),
 			},
 			Webhooks: []admissionregistration.ValidatingWebhook{{

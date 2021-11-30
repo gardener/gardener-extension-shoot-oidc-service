@@ -98,6 +98,7 @@ func (c *OIDCServiceConfig) Apply(config *controllerconfig.Config) {
 	config.Configuration = c.config
 }
 
+// ApplyHealthCheckConfig applies the HealthCheckConfig to the config.
 func (c *OIDCServiceConfig) ApplyHealthCheckConfig(config *healthcheckconfig.HealthCheckConfig) {
 	if c.config.HealthCheckConfig != nil {
 		*config = *c.config.HealthCheckConfig

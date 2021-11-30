@@ -58,7 +58,7 @@ var _ = ginkgo.Describe("Extension-shoot-oidc-service integration test: lifecycl
 				}
 				namespacedShootSecret := types.NamespacedName{
 					Namespace: f.ShootSeedNamespace(),
-					Name:      constants.ShootResourcesName,
+					Name:      constants.ApplicationName + "-shoot",
 				}
 				_, err := getSecret(ctx, f.SeedClient.Client(), namespacedTLSSecret)
 				framework.ExpectNoError(err)
@@ -83,7 +83,7 @@ var _ = ginkgo.Describe("Extension-shoot-oidc-service integration test: lifecycl
 				deployExtension(ctx, f)
 				namespacedDeployment := types.NamespacedName{
 					Namespace: f.ShootSeedNamespace(),
-					Name:      constants.SeedResourcesName,
+					Name:      constants.ApplicationName,
 				}
 
 				depl, err := getDeployment(ctx, f.SeedClient.Client(), namespacedDeployment)

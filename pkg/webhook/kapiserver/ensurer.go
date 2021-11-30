@@ -107,7 +107,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 									{Key: "token", Path: "token"},
 								},
 								LocalObjectReference: corev1.LocalObjectReference{
-									Name: gutil.SecretNamePrefixShootAccess + constants.SeedResourcesName + "-token-validator",
+									Name: gutil.SecretNamePrefixShootAccess + constants.ApplicationName + "-token-validator",
 								},
 							},
 						},
