@@ -104,7 +104,7 @@ func (c *OIDCServiceConfig) ApplyHealthCheckConfig(config *healthcheckconfig.Hea
 	}
 }
 
-// ControllerSwitches are the cmd.ControllerSwitches for the provider controllers.
+// ControllerSwitches are the cmd.ControllerSwitches for the extension controllers.
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
 		cmd.Switch(lifecycle.Name, lifecycle.AddToManager),
