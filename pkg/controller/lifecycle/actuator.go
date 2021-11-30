@@ -93,10 +93,10 @@ func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hib
 	case err != nil:
 		// Error cannot be handled here so pass it to the caller function
 		return pointer.Int32(0), err
-	case *oidcDeployment.Spec.Replicas > 0:
+	case oidcDeployment.Spec.Replicas != nil && *oidcDeployment.Spec.Replicas > 0:
 		// Do not interfere with hpa recommendations
 		return oidcDeployment.Spec.Replicas, nil
-	case *oidcDeployment.Spec.Replicas == 0:
+	case oidcDeployment.Spec.Replicas != nil && *oidcDeployment.Spec.Replicas == 0:
 		// Wake up oidc deployment with initial replica count
 		return &initialCount, nil
 	default:
