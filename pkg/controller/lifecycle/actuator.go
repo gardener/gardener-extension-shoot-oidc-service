@@ -123,10 +123,6 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
-	if err != nil {
-		return err
-	}
-
 	oidcReplicas, err := getOIDCReplicas(ctx, a.client, namespace, controller.IsHibernated(cluster))
 	if err != nil {
 		return err
@@ -179,11 +175,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		},
 	}
 
-	err = a.client.Patch(ctx, depl, client.RawPatch(types.StrategicMergePatchType, []byte("{}")))
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.client.Patch(ctx, depl, client.RawPatch(types.StrategicMergePatchType, []byte("{}")))
 }
 
 // Delete the Extension resource.
