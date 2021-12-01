@@ -22,8 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/constants"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/service"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/controllerutils"
@@ -115,12 +114,12 @@ var _ = ginkgo.Describe("Extension-shoot-oidc-service integration test: lifecycl
 func deployExtension(ctx context.Context, f *framework.ShootFramework) {
 	extension := &extensionsv1alpha1.Extension{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      service.ServiceName,
+			Name:      constants.ServiceName,
 			Namespace: f.ShootSeedNamespace(),
 		},
 		Spec: extensionsv1alpha1.ExtensionSpec{
 			DefaultSpec: extensionsv1alpha1.DefaultSpec{
-				Type: service.ExtensionType,
+				Type: constants.ExtensionType,
 			},
 		},
 	}
@@ -171,7 +170,7 @@ func reconcileExtension(ctx context.Context, f *framework.ShootFramework) {
 
 	namespacedExtension := types.NamespacedName{
 		Namespace: namespace,
-		Name:      service.ServiceName,
+		Name:      constants.ServiceName,
 	}
 	extension := &extensionsv1alpha1.Extension{}
 	err := f.SeedClient.Client().Get(ctx, namespacedExtension, extension)
@@ -206,7 +205,7 @@ func deleteExtension(ctx context.Context, f *framework.ShootFramework) {
 
 	namespacedExtension := types.NamespacedName{
 		Namespace: namespace,
-		Name:      service.ServiceName,
+		Name:      constants.ServiceName,
 	}
 	extension := &extensionsv1alpha1.Extension{}
 	err := f.SeedClient.Client().Get(ctx, namespacedExtension, extension)

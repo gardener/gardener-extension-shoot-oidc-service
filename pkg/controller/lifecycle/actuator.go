@@ -10,9 +10,8 @@ import (
 	"fmt"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/service"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"github.com/gardener/gardener/extensions/pkg/util"
@@ -48,11 +47,11 @@ import (
 
 const (
 	// ActuatorName is the name of the OIDC Service actuator.
-	ActuatorName = service.ServiceName + "-actuator"
+	ActuatorName = constants.ServiceName + "-actuator"
 )
 
 //go:embed templates/authentication.gardener.cloud_openidconnects.yaml
-var crdContent string
+var crdContent []byte
 
 // NewActuator returns an actuator responsible for Extension resources.
 func NewActuator(config config.Configuration) extension.Actuator {
@@ -159,11 +158,11 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
-	if err := managedresources.CreateForShoot(ctx, a.client, namespace, service.ManagedResourceNamesShoot, false, shootResources); err != nil {
+	if err := managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, false, shootResources); err != nil {
 		return err
 	}
 
-	if err := managedresources.CreateForSeed(ctx, a.client, namespace, service.ManagedResourceNamesSeed, false, seedResources); err != nil {
+	if err := managedresources.CreateForSeed(ctx, a.client, namespace, constants.ManagedResourceNamesSeed, false, seedResources); err != nil {
 		return err
 	}
 
@@ -182,10 +181,10 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
 	namespace := ex.GetNamespace()
 
-	if err := managedresources.DeleteForSeed(ctx, a.client, namespace, service.ManagedResourceNamesSeed); err != nil {
+	if err := managedresources.DeleteForSeed(ctx, a.client, namespace, constants.ManagedResourceNamesSeed); err != nil {
 		return err
 	}
-	if err := managedresources.DeleteForShoot(ctx, a.client, namespace, service.ManagedResourceNamesShoot); err != nil {
+	if err := managedresources.DeleteForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot); err != nil {
 		return err
 	}
 
@@ -203,16 +202,12 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 }
 
 func (a *actuator) deleteSecret(ctx context.Context, name, namespace string) error {
-	if err := a.client.Delete(ctx, &corev1.Secret{
+	return client.IgnoreNotFound(a.client.Delete(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-	}); err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-
-	return nil
+	}))
 }
 
 // Restore the Extension resource.
@@ -222,8 +217,6 @@ func (a *actuator) Restore(ctx context.Context, ex *extensionsv1alpha1.Extension
 
 // Migrate the Extension resource.
 func (a *actuator) Migrate(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
-	// Keep objects for shoot managed resources so that they are not deleted from the shoot during the migration
-
 	return a.Delete(ctx, ex)
 }
 
@@ -347,9 +340,9 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 		return nil, err
 	}
 
-	image, err := imagevector.ImageVector().FindImage(service.ImageName)
+	image, err := imagevector.ImageVector().FindImage(constants.ImageName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find image version for %s: %v", service.ImageName, err)
+		return nil, fmt.Errorf("failed to find image version for %s: %v", constants.ImageName, err)
 	}
 
 	oidcDeployment := &appsv1.Deployment{
@@ -696,6 +689,6 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 		return nil, err
 	}
 
-	shootResources["crd.yaml"] = []byte(crdContent)
+	shootResources["crd.yaml"] = crdContent
 	return shootResources, nil
 }

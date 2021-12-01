@@ -27,7 +27,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	fciCodec := oscutils.NewFileContentInlineCodec()
 
 	mutator := genericmutator.NewMutator(
-		NewMutator(logger),
+		NewEnsurer(logger),
 		oscutils.NewUnitSerializer(),
 		kubelet.NewConfigCodec(fciCodec),
 		fciCodec,
@@ -40,7 +40,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		return nil, err
 	}
 
-	labelSelector := &metav1.LabelSelector{
+	namespaceSelector := &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{Key: v1beta1constants.LabelExtensionPrefix + "shoot-oidc-service", Operator: metav1.LabelSelectorOpIn, Values: []string{"true"}},
 		},
@@ -54,7 +54,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Target:   extensionswebhook.TargetSeed,
 		Path:     "oidc",
 		Webhook:  &admission.Webhook{Handler: handler},
-		Selector: labelSelector,
+		Selector: namespaceSelector,
 	}
 
 	return webhook, err

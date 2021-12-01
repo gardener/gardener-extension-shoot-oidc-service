@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/service"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	healthcheckoperation "github.com/gardener/gardener/extensions/test/integration/healthcheck"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/test/framework"
@@ -38,15 +38,15 @@ var _ = ginkgo.Describe("Extension-shoot-oidc-service integration test: health c
 
 	ginkgo.Context("Extension", func() {
 		ginkgo.Context("Condition type: ShootControlPlaneHealthy", func() {
-			f.Serial().Release().CIt(fmt.Sprintf("Extension CRD should contain unhealthy condition due to ManagedResource '%s' is unhealthy", service.ManagedResourceNamesSeed), func(ctx context.Context) {
-				err := healthcheckoperation.ExtensionHealthCheckWithManagedResource(ctx, timeout, f, "shoot-oidc-service", service.ManagedResourceNamesSeed, gardencorev1beta1.ShootControlPlaneHealthy)
+			f.Serial().Release().CIt(fmt.Sprintf("Extension CRD should contain unhealthy condition due to ManagedResource '%s' is unhealthy", constants.ManagedResourceNamesSeed), func(ctx context.Context) {
+				err := healthcheckoperation.ExtensionHealthCheckWithManagedResource(ctx, timeout, f, "shoot-oidc-service", constants.ManagedResourceNamesSeed, gardencorev1beta1.ShootControlPlaneHealthy)
 				framework.ExpectNoError(err)
 			}, timeout)
 		})
 
 		ginkgo.Context("Condition type: ShootSystemComponentsHealthy", func() {
-			f.Serial().Release().CIt(fmt.Sprintf("Extension CRD should contain unhealthy condition due to ManagedResource '%s' is unhealthy", service.ManagedResourceNamesShoot), func(ctx context.Context) {
-				err := healthcheckoperation.ExtensionHealthCheckWithManagedResource(ctx, timeout, f, "shoot-oidc-service", service.ManagedResourceNamesShoot, gardencorev1beta1.ShootSystemComponentsHealthy)
+			f.Serial().Release().CIt(fmt.Sprintf("Extension CRD should contain unhealthy condition due to ManagedResource '%s' is unhealthy", constants.ManagedResourceNamesShoot), func(ctx context.Context) {
+				err := healthcheckoperation.ExtensionHealthCheckWithManagedResource(ctx, timeout, f, "shoot-oidc-service", constants.ManagedResourceNamesShoot, gardencorev1beta1.ShootSystemComponentsHealthy)
 				framework.ExpectNoError(err)
 			}, timeout)
 		})

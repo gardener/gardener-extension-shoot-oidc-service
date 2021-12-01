@@ -7,8 +7,8 @@ package lifecycle
 import (
 	"time"
 
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	controllerconfig "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/config"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/service"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -17,11 +17,11 @@ import (
 
 const (
 	// Type is the type of Extension resource.
-	Type = service.ExtensionType
+	Type = constants.ExtensionType
 	// Name is the name of the lifecycle controller.
 	Name = "shoot_oidc_service_lifecycle_controller"
 	// FinalizerSuffix is the finalizer suffix for the OIDC Service controller.
-	FinalizerSuffix = service.ExtensionType
+	FinalizerSuffix = constants.ExtensionType
 )
 
 // DefaultAddOptions contains configuration for the OIDC service.
@@ -46,6 +46,6 @@ func AddToManager(mgr manager.Manager) error {
 		FinalizerSuffix:   FinalizerSuffix,
 		Resync:            60 * time.Minute,
 		Predicates:        extension.DefaultPredicates(DefaultAddOptions.IgnoreOperationAnnotation),
-		Type:              service.ExtensionType,
+		Type:              constants.ExtensionType,
 	})
 }

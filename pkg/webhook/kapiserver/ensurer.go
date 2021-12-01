@@ -7,7 +7,7 @@ package kapiserver
 import (
 	"context"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
@@ -121,8 +121,8 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 	return nil
 }
 
-// NewMutator creates a new oidc mutator.
-func NewMutator(logger logr.Logger) genericmutator.Ensurer {
+// NewEnsurer creates a new oidc mutator.
+func NewEnsurer(logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
 		logger: logger.WithName("oidc-controlplane-ensurer"),
 	}

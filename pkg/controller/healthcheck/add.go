@@ -7,7 +7,7 @@ package healthcheck
 import (
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/service"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck/general"
@@ -31,7 +31,7 @@ var (
 // HealthChecks are grouped by extension (e.g worker), extension.type (e.g aws) and  Health Check Type (e.g SystemComponentsHealthy)
 func RegisterHealthChecks(mgr manager.Manager, opts healthcheck.DefaultAddArgs) error {
 	return healthcheck.DefaultRegistration(
-		service.ExtensionType,
+		constants.ExtensionType,
 		extensionsv1alpha1.SchemeGroupVersion.WithKind(extensionsv1alpha1.ExtensionResource),
 		func() client.ObjectList { return &extensionsv1alpha1.ExtensionList{} },
 		func() extensionsv1alpha1.Object { return &extensionsv1alpha1.Extension{} },
@@ -41,11 +41,11 @@ func RegisterHealthChecks(mgr manager.Manager, opts healthcheck.DefaultAddArgs) 
 		[]healthcheck.ConditionTypeToHealthCheck{
 			{
 				ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
-				HealthCheck:   general.CheckManagedResource(service.ManagedResourceNamesSeed),
+				HealthCheck:   general.CheckManagedResource(constants.ManagedResourceNamesSeed),
 			},
 			{
 				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
-				HealthCheck:   general.CheckManagedResource(service.ManagedResourceNamesShoot),
+				HealthCheck:   general.CheckManagedResource(constants.ManagedResourceNamesShoot),
 			},
 		},
 	)

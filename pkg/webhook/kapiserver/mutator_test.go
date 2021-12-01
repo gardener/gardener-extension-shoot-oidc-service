@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -93,7 +93,7 @@ var _ = Describe("Mutator", func() {
 
 			client = mockclient.NewMockClient(ctrl)
 
-			ensurer = NewMutator(logger)
+			ensurer = NewEnsurer(logger)
 			err := ensurer.(inject.Client).InjectClient(client)
 			Expect(err).To(Not(HaveOccurred()))
 		})

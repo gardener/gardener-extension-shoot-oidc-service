@@ -5,8 +5,21 @@
 package constants
 
 const (
+	// ExtensionType is the name of the extension type.
+	ExtensionType = "shoot-oidc-service"
+	// ServiceName is the name of the service.
+	ServiceName = ExtensionType
+
+	extensionServiceName = "extension-" + ServiceName
+	// ManagedResourceNamesSeed is the name used to describe the managed seed resources.
+	ManagedResourceNamesSeed = extensionServiceName + "-seed"
+	// ManagedResourceNamesShoot is the name used to describe the managed shoot resources.
+	ManagedResourceNamesShoot = extensionServiceName + "-shoot"
+
 	// ApplicationName is the name for resource describing the components deployed by the extension controller.
 	ApplicationName = "oidc-webhook-authenticator"
+	// ImageName is the name of the oidc webhook authenticator image.
+	ImageName = ApplicationName
 	// WebhookConfigurationName is the name of the webhook configuration(s) deployed in the shoot cluster.
 	WebhookConfigurationName = ApplicationName + "-shoot"
 	// WebhookTLSecretName is the name of the TLS secret resource used by the OIDC webhook in the seed cluster.
