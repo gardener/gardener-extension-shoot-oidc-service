@@ -24,6 +24,9 @@ ifeq ($(WEBHOOK_CONFIG_MODE), service)
   WEBHOOK_PARAM := --webhook-config-namespace=$(EXTENSION_NAMESPACE)
 endif
 
+TOOLS_DIR := $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools
+include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
+
 .PHONY: start
 start:
 	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
@@ -84,7 +87,7 @@ check-generate:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-generate.sh $(REPO_ROOT)
 
 .PHONY: check
-check:
+check: $(GOIMPORTS)
 	go vet ./...
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
