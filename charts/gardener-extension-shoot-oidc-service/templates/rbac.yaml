@@ -23,6 +23,14 @@ rules:
   - watch
   - patch
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - extensions.gardener.cloud
   resources:
   - clusters
@@ -40,6 +48,15 @@ rules:
   - watch
   - update
   - create
+  - patch
+- apiGroups:
+  - extensions.gardener.cloud
+  resources:
+  - dnsrecords
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - resources.gardener.cloud
   resources:
