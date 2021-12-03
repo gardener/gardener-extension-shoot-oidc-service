@@ -465,15 +465,8 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 		return nil, err
 	}
 
-	resources, err := registry.AddAllAndSerialize(
-		&corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName,
-				Namespace: namespace,
-				Labels:    getLabels(),
-			},
-		},
-		&autoscalingv2beta1.HorizontalPodAutoscaler{
+	if oidcReplicas != nil && *oidcReplicas > 0 {
+		err = registry.Add(&autoscalingv2beta1.HorizontalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.ApplicationName,
 				Namespace: namespace,
@@ -495,6 +488,20 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 						},
 					},
 				},
+			},
+		})
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resources, err := registry.AddAllAndSerialize(
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ApplicationName,
+				Namespace: namespace,
+				Labels:    getLabels(),
 			},
 		},
 		oidcDeployment,
