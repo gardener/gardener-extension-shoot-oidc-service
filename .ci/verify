@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -10,9 +14,8 @@ git config --global user.email "gardener@sap.com"
 git config --global user.name "Gardener CI/CD"
 
 # Required due to https://github.com/kubernetes/kubernetes/issues/86753 - can be removed once the issue is fixed.
-# Uncomment this when proper `verify-extended` or equivalent is implemented
-# mkdir -p /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
-# cp -r . /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
-# cd /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
+mkdir -p /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
+cp -r . /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
+cd /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
 
-# make verify-extended
+make verify-extended
