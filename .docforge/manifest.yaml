@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+{{- $vers := Split .versions "," -}}
+{{ $defaultBranch := (index $vers 0) }}
+structure:
+- name: _index.md
+  source: https://github.com/gardener/gardener-extension-shoot-oidc-service/blob/{{$defaultBranch}}/README.md
+- name: docs
+  nodes:
+  - nodesSelector:
+      path: https://github.com/gardener/gardener-extension-shoot-oidc-service/tree/{{$defaultBranch}}/docs
+links:
+  downloads:
+    scope:
+      "gardener/gardener-extension-shoot-oidc-service/(blob|raw)/(.*)/docs": ~
