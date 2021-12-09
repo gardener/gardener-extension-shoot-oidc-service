@@ -31,3 +31,12 @@ webhookConfig:
   serverPort: 10251
 
 ignoreResources: false
+
+vpa:
+  enabled: true
+  resourcePolicy:
+    minAllowed:
+      cpu: 50m
+      memory: 64Mi
+  updatePolicy:
+    updateMode: "Auto"
