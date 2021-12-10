@@ -33,6 +33,23 @@ spec:
         app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- if gt (int .Values.replicaCount) 1 }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - gardener-extension-{{ .Values.serviceName }}
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - {{ .Release.Name }}
+            topologyKey: "kubernetes.io/hostname"
+      {{- end }}
+      priorityClassName: gardener-extension-{{ .Values.serviceName }}
       serviceAccountName: gardener-extension-{{ .Values.serviceName }}
       containers:
       - name: gardener-extension-{{ .Values.serviceName }}
