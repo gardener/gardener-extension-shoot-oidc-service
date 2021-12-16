@@ -401,7 +401,8 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 							}},
 						},
 					},
-					ServiceAccountName: constants.ApplicationName,
+					AutomountServiceAccountToken: pointer.Bool(false),
+					ServiceAccountName:           constants.ApplicationName,
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
 						Image:           image.String(),
@@ -503,6 +504,7 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 				Namespace: namespace,
 				Labels:    getLabels(),
 			},
+			AutomountServiceAccountToken: pointer.Bool(false),
 		},
 		oidcDeployment,
 		&corev1.Service{
