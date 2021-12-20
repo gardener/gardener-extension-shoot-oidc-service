@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ############# builder
-FROM golang:1.16.11 AS builder
+FROM golang:1.17.5 AS builder
 
 WORKDIR /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
 COPY . .
 RUN make install
 
 ############# gardener-extension-shoot-oidc-service
-FROM alpine:3.13.7 AS gardener-extension-shoot-oidc-service
+FROM alpine:3.15.0 AS gardener-extension-shoot-oidc-service
 
 COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-shoot-oidc-service /gardener-extension-shoot-oidc-service

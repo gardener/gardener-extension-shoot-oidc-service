@@ -51,7 +51,7 @@ func Config(kubernetesVersion *semver.Version, clusterDNSAddress, clusterDomain 
 				CacheUnauthorizedTTL: metav1.Duration{Duration: 30 * time.Second},
 			},
 		},
-		CgroupDriver:                     "cgroupfs",
+		CgroupDriver:                     "systemd",
 		CgroupRoot:                       "/",
 		CgroupsPerQOS:                    pointer.Bool(true),
 		ClusterDNS:                       []string{clusterDNSAddress},
@@ -93,7 +93,7 @@ func Config(kubernetesVersion *semver.Version, clusterDNSAddress, clusterDomain 
 		ResolverConfig:                   "/etc/resolv.conf",
 		RotateCertificates:               true,
 		RuntimeRequestTimeout:            metav1.Duration{Duration: 2 * time.Minute},
-		SerializeImagePulls:              pointer.Bool(true),
+		SerializeImagePulls:              params.SerializeImagePulls,
 		SyncFrequency:                    metav1.Duration{Duration: time.Minute},
 		SystemReserved:                   params.SystemReserved,
 		VolumeStatsAggPeriod:             metav1.Duration{Duration: time.Minute},
@@ -101,6 +101,10 @@ func Config(kubernetesVersion *semver.Version, clusterDNSAddress, clusterDomain 
 
 	if !version.ConstraintK8sLess119.Check(kubernetesVersion) {
 		config.VolumePluginDir = pathVolumePluginDirectory
+	}
+
+	if version.ConstraintK8sLessEqual122.Check(kubernetesVersion) {
+		config.CgroupDriver = "cgroupfs"
 	}
 
 	return config
@@ -204,6 +208,10 @@ func setConfigDefaults(c *components.ConfigurableKubeletConfigParameters) {
 
 	if c.ImageGCLowThresholdPercent == nil {
 		c.ImageGCLowThresholdPercent = pointer.Int32(40)
+	}
+
+	if c.SerializeImagePulls == nil {
+		c.SerializeImagePulls = pointer.Bool(true)
 	}
 
 	if c.KubeReserved == nil {
