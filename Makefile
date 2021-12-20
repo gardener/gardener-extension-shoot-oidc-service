@@ -39,6 +39,7 @@ start:
 		--webhook-config-server-port=$(WEBHOOK_CONFIG_PORT) \
 		--webhook-config-mode=$(WEBHOOK_CONFIG_MODE) \
 		--config=./example/00-config.yaml \
+		--gardener-version="v1.39.0" \
 		$(WEBHOOK_PARAM)
 
 #################################################################

@@ -65,6 +65,9 @@ spec:
         - --webhook-config-service-port={{ .Values.webhookConfig.servicePort }}
         - --webhook-config-server-port={{ .Values.webhookConfig.serverPort }}
         - --webhook-config-namespace={{ .Release.Namespace }}
+        {{- if .Values.gardener.version }}
+        - --gardener-version={{ .Values.gardener.version }}
+        {{- end }}
         ports:
         - name: webhook-server
           containerPort: {{ .Values.webhookConfig.serverPort }}
