@@ -15,7 +15,6 @@ import (
 	"github.com/gardener/gardener/test/framework/reporter"
 
 	_ "github.com/gardener/gardener-extension-shoot-oidc-service/test/integration/healthcheck"
-	_ "github.com/gardener/gardener-extension-shoot-oidc-service/test/integration/lifecycle"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
