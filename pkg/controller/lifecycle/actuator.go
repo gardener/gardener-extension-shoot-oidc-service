@@ -234,6 +234,11 @@ func (a *actuator) Restore(ctx context.Context, ex *extensionsv1alpha1.Extension
 
 // Migrate the Extension resource.
 func (a *actuator) Migrate(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
+	// Keep objects for shoot managed resources so that they are not deleted from the shoot during the migration
+	if err := managedresources.SetKeepObjects(ctx, a.client, ex.GetNamespace(), constants.ManagedResourceNamesShoot, true); err != nil {
+		return err
+	}
+
 	return a.Delete(ctx, ex)
 }
 
