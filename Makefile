@@ -39,6 +39,7 @@ start:
 		--webhook-config-server-port=$(WEBHOOK_CONFIG_PORT) \
 		--webhook-config-mode=$(WEBHOOK_CONFIG_MODE) \
 		--config=./example/00-config.yaml \
+		--gardener-version="v1.39.0" \
 		$(WEBHOOK_PARAM)
 
 #################################################################
@@ -66,7 +67,7 @@ docker-images:
 install-requirements:
 	@go install -mod=vendor $(REPO_ROOT)/vendor/github.com/ahmetb/gen-crd-api-reference-docs
 	@go install -mod=vendor $(REPO_ROOT)/vendor/github.com/golang/mock/mockgen
-	@go install -mod=vendor $(REPO_ROOT)/vendor/github.com/onsi/ginkgo
+	@go install -mod=vendor $(REPO_ROOT)/vendor/golang.org/x/tools/cmd/goimports
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install-requirements.sh
 
 .PHONY: revendor

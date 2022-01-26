@@ -17,6 +17,7 @@ const ExtensionName = "shoot-oidc-service"
 
 // Options holds configuration passed to the OIDC Service controller.
 type Options struct {
+	generalOptions     *controllercmd.GeneralOptions
 	oidcOptions        *oidccmd.OIDCServiceOptions
 	restOptions        *controllercmd.RESTOptions
 	managerOptions     *controllercmd.ManagerOptions
@@ -40,8 +41,9 @@ func NewOptions() *Options {
 	webhookOptions := webhookcmd.NewAddToManagerOptions(ExtensionName, webhookServerOptions, webhookSwitches)
 
 	options := &Options{
-		oidcOptions: &oidccmd.OIDCServiceOptions{},
-		restOptions: &controllercmd.RESTOptions{},
+		generalOptions: &controllercmd.GeneralOptions{},
+		oidcOptions:    &oidccmd.OIDCServiceOptions{},
+		restOptions:    &controllercmd.RESTOptions{},
 		managerOptions: &controllercmd.ManagerOptions{
 			// These are default values.
 			LeaderElection:          true,
@@ -68,6 +70,7 @@ func NewOptions() *Options {
 	}
 
 	options.optionAggregator = controllercmd.NewOptionAggregator(
+		options.generalOptions,
 		options.oidcOptions,
 		options.restOptions,
 		options.managerOptions,

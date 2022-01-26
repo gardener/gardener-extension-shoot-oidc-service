@@ -40,3 +40,6 @@ vpa:
       memory: 64Mi
   updatePolicy:
     updateMode: "Auto"
+
+gardener:
+  version: ""

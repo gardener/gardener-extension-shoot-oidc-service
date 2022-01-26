@@ -13,7 +13,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -33,7 +32,9 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		fciCodec,
 		logger,
 	)
-	types := []client.Object{&appsv1.Deployment{}}
+	types := []extensionswebhook.Type{
+		{Obj: &appsv1.Deployment{}},
+	}
 
 	handler, err := extensionswebhook.NewBuilder(mgr, logger).WithMutator(mutator, types...).Build()
 	if err != nil {
