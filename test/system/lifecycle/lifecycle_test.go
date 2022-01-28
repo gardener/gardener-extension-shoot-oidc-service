@@ -7,7 +7,7 @@
 		- Tests the lifecycle controller for the shoot-oidc-service extension.
 	Prerequisites
 		- A Shoot exists and the oidc extension is available for the seed cluster.
- **/
+**/
 
 package lifecycle_test
 
