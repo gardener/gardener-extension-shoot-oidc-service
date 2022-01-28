@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2022 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+kind: TestDefinition
+metadata:
+  name: oidc-lifecycle
+spec:
+  owner: gardener-oq@listserv.sap.com
+  description: Tests the lifecycle of the oidc extension.
+  activeDeadlineSeconds: 3600
+
+  command: [bash, -c]
+  args:
+  - >-
+    go test -timeout=25m -mod=vendor ./test/system/lifecycle
+    --v -ginkgo.v -ginkgo.progress -ginkgo.noColor
+    --shoot-name=$SHOOT_NAME
+    --project-namespace=$PROJECT_NAMESPACE
+    --kubecfg="$TM_KUBECONFIG_PATH/gardener.config"
+  image: golang:1.17.5
