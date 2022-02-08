@@ -15,7 +15,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,7 +26,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/test/system/resources/templates"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	"github.com/gardener/gardener/test/framework"
@@ -37,6 +35,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,7 +51,6 @@ const (
 
 var _ = Describe("Shoot oidc service testing", func() {
 	f := framework.NewShootFramework(nil)
-	f.ResourcesDir = "../resources"
 
 	var initialExtensionConfig []gardencorev1beta1.Extension
 
@@ -94,24 +92,42 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 			jwks, err := getJWKS(ctx, f.SeedClient.RESTClient(), jwksURL.Path)
 			Expect(err).ToNot(HaveOccurred())
+			clientId := "some-custom-client-id"
+			oidcAPIVersion := "authentication.gardener.cloud/v1alpha1"
+			oidcKind := "OpenIDConnect"
 
 			// Deploy oidc resource
-			clientId := "some-custom-client-id"
-			values := map[string]interface{}{
-				"issuerURL": oidConfig.Issuer,
-				"clientID":  clientId,
-				"keys":      base64.StdEncoding.EncodeToString(jwks),
+			oidc := &unstructured.Unstructured{}
+			oidc.Object = map[string]interface{}{
+				"apiVersion": oidcAPIVersion,
+				"kind":       oidcKind,
+				"metadata": map[string]interface{}{
+					"name": "custom",
+				},
+				"spec": map[string]interface{}{
+					"issuerURL":      oidConfig.Issuer,
+					"clientID":       clientId,
+					"usernameClaim":  "sub",
+					"usernamePrefix": "custom-prefix:",
+					"jwks": map[string]interface{}{
+						"keys": jwks,
+					},
+				},
 			}
-			err = f.RenderAndDeployTemplate(ctx, f.ShootClient, templates.CustomOIDCConfiguration, values)
+			err = f.ShootClient.Client().Create(ctx, oidc, &client.CreateOptions{})
 			Expect(err).ToNot(HaveOccurred())
-			getRequest := f.ShootClient.RESTClient().Get()
-			getRequest = getRequest.RequestURI("/apis/authentication.gardener.cloud/v1alpha1/openidconnects/custom")
-			getResponse := getRequest.Do(ctx)
-			Expect(getResponse.Error()).ToNot(HaveOccurred())
 
-			statusCode := 0
-			getResponse.StatusCode(&statusCode)
-			Expect(statusCode).To(Equal(200))
+			oidc = &unstructured.Unstructured{}
+			oidc.SetAPIVersion(oidcAPIVersion)
+			oidc.SetKind(oidcKind)
+			oidc.SetName("custom")
+			err = f.ShootClient.Client().Get(ctx, client.ObjectKeyFromObject(oidc), oidc)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Conversion should be safe
+			spec := oidc.Object["spec"].(map[string]interface{})
+			Expect(spec["clientID"]).To(Equal(clientId))
+			Expect(spec["issuerURL"]).To(Equal(oidConfig.Issuer))
 
 			// Get token from seed
 			var ttl int64 = 1800
@@ -144,12 +160,8 @@ var _ = Describe("Shoot oidc service testing", func() {
 			}, time.Second*20, time.Second).Should(Equal(expectedStatus))
 
 			// Delete the oidc resource
-			deleteRequest := f.ShootClient.RESTClient().Delete()
-			deleteRequest = deleteRequest.RequestURI("/apis/authentication.gardener.cloud/v1alpha1/openidconnects/custom")
-			deleteResponse := deleteRequest.Do(ctx)
-			Expect(deleteResponse.Error()).ToNot(HaveOccurred())
-			getResponse.StatusCode(&statusCode)
-			Expect(statusCode).To(Equal(200))
+			err = f.ShootClient.Client().Delete(ctx, oidc, &client.DeleteOptions{})
+			Expect(err).ToNot(HaveOccurred())
 
 			// Expect API calls to be unauthorized
 			expectedStatus.Code = 401
