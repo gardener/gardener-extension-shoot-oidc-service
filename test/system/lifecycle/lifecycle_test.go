@@ -34,7 +34,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
@@ -205,7 +204,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 			}
 			err = f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(secret), secret)
 			Expect(err).To(HaveOccurred())
-			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			Expect(err).To(BeNotFoundError())
 		}
 	}, timeout)
 })
