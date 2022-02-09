@@ -28,6 +28,7 @@ import (
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
+	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	"github.com/gardener/gardener/test/framework"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -66,7 +67,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 		})
 	})
 
-	f.Serial().Release().CIt("Should perform the common case scenario without any errors", func(ctx context.Context) {
+	f.Serial().Beta().CIt("Should perform the common case scenario without any errors", func(ctx context.Context) {
 		err := f.UpdateShoot(ctx, ensureOIDCServiceIsEnabled)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -141,7 +142,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 			expectedStatus := status{
 				Status:  "Failure",
-				Message: "forbidden: User \"custom-prefix:system:serviceaccount:default:default\" cannot get path \"/\"",
+				Message: `forbidden: User "custom-prefix:system:serviceaccount:default:default" cannot get path "/"`,
 				Reason:  "Forbidden",
 				Code:    403,
 			}
@@ -188,7 +189,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 		// Ensure that oidc authenticator deployment is deleted
 		err = f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)
 		Expect(err).To(HaveOccurred())
-		Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		Expect(err).To(BeNotFoundError())
 
 		// Ensure that manually deployed secrets are deleted
 		for _, name := range []string{

@@ -138,6 +138,7 @@ github.com/gardener/gardener/pkg/utils/managedresources
 github.com/gardener/gardener/pkg/utils/managedresources/builder
 github.com/gardener/gardener/pkg/utils/retry
 github.com/gardener/gardener/pkg/utils/secrets
+github.com/gardener/gardener/pkg/utils/test/matchers
 github.com/gardener/gardener/pkg/utils/validation/cidr
 github.com/gardener/gardener/pkg/utils/version
 github.com/gardener/gardener/test/framework
@@ -319,6 +320,8 @@ github.com/onsi/ginkgo/types
 ## explicit
 github.com/onsi/gomega
 github.com/onsi/gomega/format
+github.com/onsi/gomega/gstruct
+github.com/onsi/gomega/gstruct/errors
 github.com/onsi/gomega/internal
 github.com/onsi/gomega/matchers
 github.com/onsi/gomega/matchers/support/goraph/bipartitegraph
