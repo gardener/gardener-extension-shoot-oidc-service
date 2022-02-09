@@ -30,7 +30,6 @@ gardener-extension-shoot-oidc-service:
         options:
           public_build_logs: true
     release:
-      steps: ~
       traits:
         version:
           preprocess: 'finalize'
