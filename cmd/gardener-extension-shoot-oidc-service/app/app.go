@@ -11,12 +11,12 @@ import (
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/lifecycle"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-
 	"github.com/gardener/gardener/extensions/pkg/util"
+
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-
 	componentbaseconfig "k8s.io/component-base/config"
+	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -26,11 +26,13 @@ func NewServiceControllerCommand() *cobra.Command {
 	options := NewOptions()
 
 	cmd := &cobra.Command{
-		Use:           "oidc-service-controller-manager",
+		Use:           "gardener-extension-shoot-oidc-service",
 		Short:         "OIDC Service Controller manages components which provide openid connect authentication services.",
 		SilenceErrors: true,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
+			verflag.PrintAndExitIfRequested()
+
 			if err := options.optionAggregator.Complete(); err != nil {
 				return fmt.Errorf("error completing options: %s", err)
 			}
@@ -39,6 +41,7 @@ func NewServiceControllerCommand() *cobra.Command {
 		},
 	}
 
+	verflag.AddFlags(cmd.Flags())
 	options.optionAggregator.AddFlags(cmd.Flags())
 
 	return cmd
