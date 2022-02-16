@@ -6,6 +6,8 @@
 **
 
 # Exclude folders relevant for build
+!.git
+!.dockerignore
 !charts/
 !cmd/
 !example/
@@ -14,6 +16,7 @@
 !test/
 !vendor/
 
+!.gitignore
 
 !go.mod
 !go.sum
