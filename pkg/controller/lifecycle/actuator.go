@@ -123,12 +123,13 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
-	oidcReplicas, err := getOIDCReplicas(ctx, a.client, namespace, controller.IsHibernated(cluster))
+	hibernated := controller.IsHibernated(cluster)
+	oidcReplicas, err := getOIDCReplicas(ctx, a.client, namespace, hibernated)
 	if err != nil {
 		return err
 	}
 
-	seedResources, err := getSeedResources(oidcReplicas, namespace, oidcShootAccessSecret)
+	seedResources, err := getSeedResources(oidcReplicas, hibernated, namespace, oidcShootAccessSecret)
 	if err != nil {
 		return err
 	}
@@ -164,6 +165,13 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 	}
 
 	if err := managedresources.CreateForSeed(ctx, a.client, namespace, constants.ManagedResourceNamesSeed, false, seedResources); err != nil {
+		return err
+	}
+
+	twoMinutes := 2 * time.Minute
+	timeoutSeedCtx, cancelSeedCtx := context.WithTimeout(ctx, twoMinutes)
+	defer cancelSeedCtx()
+	if err := managedresources.WaitUntilHealthy(timeoutSeedCtx, a.client, namespace, constants.ManagedResourceNamesSeed); err != nil {
 		return err
 	}
 
@@ -321,7 +329,7 @@ func getLabels() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *gutil.ShootAccessSecret) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace string, shootAccessSecret *gutil.ShootAccessSecret) (map[string][]byte, error) {
 	var (
 		tcpProto         = corev1.ProtocolTCP
 		port10443        = intstr.FromInt(10443)
@@ -472,6 +480,19 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 		return nil, err
 	}
 
+	if !hibernated {
+		err = registry.Add(&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.WebhookKubeConfigSecretName,
+				Namespace: namespace,
+				Labels:    getLabels(),
+			},
+			Data: map[string][]byte{
+				"kubeconfig": kubeAPIServerKubeConfig,
+			},
+		})
+	}
+
 	if oidcReplicas != nil && *oidcReplicas > 0 {
 		err = registry.Add(&autoscalingv2beta1.HorizontalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
@@ -566,16 +587,6 @@ func getSeedResources(oidcReplicas *int32, namespace string, shootAccessSecret *
 						}},
 					},
 				},
-			},
-		},
-		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.WebhookKubeConfigSecretName,
-				Namespace: namespace,
-				Labels:    getLabels(),
-			},
-			Data: map[string][]byte{
-				"kubeconfig": kubeAPIServerKubeConfig,
 			},
 		},
 	)
