@@ -10,6 +10,9 @@ import (
 	"fmt"
 	"strings"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
@@ -18,9 +21,8 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
+
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

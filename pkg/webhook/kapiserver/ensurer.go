@@ -14,14 +14,14 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
+
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
