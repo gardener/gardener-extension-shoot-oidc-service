@@ -51,7 +51,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 
 	if c := extensionswebhook.ContainerWithName(ps.Containers, v1beta1constants.DeploymentNameKubeAPIServer); c != nil {
 		if new.Status.ReadyReplicas <= 0 {
-			e.logger.Info("------------------------------------------------------> APISERVER REPLICAS NOT READY <------------------------------------------------------")
+			e.logger.Info("----------------> APISERVER REPLICAS NOT READY <----------------")
 			return nil
 		}
 
@@ -63,7 +63,8 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 
 		if err := e.client.Get(ctx, namespacedName, secret); err != nil {
 			if apierrors.IsNotFound(err) {
-				ensureKubeAPIServerIsNotMutated(ps, c)
+				e.logger.Info("----------------> OIDC KUBECONFIG NOT FOUND <----------------")
+				//ensureKubeAPIServerIsNotMutated(ps, c)
 				return nil
 			} else {
 				return err
@@ -75,7 +76,8 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return err
 		}
 		if controller.IsHibernated(cluster) {
-			ensureKubeAPIServerIsNotMutated(ps, c)
+			e.logger.Info("----------------> CLUSTER IS HIBERNATED <----------------")
+			//ensureKubeAPIServerIsNotMutated(ps, c)
 			return nil
 		}
 
