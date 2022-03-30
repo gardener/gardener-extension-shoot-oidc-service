@@ -50,6 +50,11 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 	ps := &template.Spec
 
 	if c := extensionswebhook.ContainerWithName(ps.Containers, v1beta1constants.DeploymentNameKubeAPIServer); c != nil {
+		if new.Status.ReadyReplicas <= 0 {
+			e.logger.Info("------------------------------------------------------> APISERVER REPLICAS NOT READY <------------------------------------------------------")
+			return nil
+		}
+
 		namespacedName := types.NamespacedName{
 			Namespace: new.Namespace,
 			Name:      constants.WebhookKubeConfigSecretName,

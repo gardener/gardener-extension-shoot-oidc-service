@@ -216,6 +216,9 @@ var _ = Describe("Mutator", func() {
 						},
 					},
 				},
+				Status: appsv1.DeploymentStatus{
+					ReadyReplicas: 1,
+				},
 			}
 
 			client = mockclient.NewMockClient(ctrl)
