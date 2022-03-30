@@ -51,7 +51,6 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 
 	if c := extensionswebhook.ContainerWithName(ps.Containers, v1beta1constants.DeploymentNameKubeAPIServer); c != nil {
 		if new.Status.ReadyReplicas <= 0 {
-			e.logger.Info("----------------> APISERVER REPLICAS NOT READY <----------------")
 			return nil
 		}
 
@@ -63,8 +62,6 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 
 		if err := e.client.Get(ctx, namespacedName, secret); err != nil {
 			if apierrors.IsNotFound(err) {
-				e.logger.Info("----------------> OIDC KUBECONFIG NOT FOUND <----------------")
-				//ensureKubeAPIServerIsNotMutated(ps, c)
 				return nil
 			} else {
 				return err
@@ -76,8 +73,6 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return err
 		}
 		if controller.IsHibernated(cluster) {
-			e.logger.Info("----------------> CLUSTER IS HIBERNATED <----------------")
-			//ensureKubeAPIServerIsNotMutated(ps, c)
 			return nil
 		}
 
@@ -92,17 +87,6 @@ func NewEnsurer(logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
 		logger: logger.WithName("oidc-controlplane-ensurer"),
 	}
-}
-
-// ensureKubeAPIServerIsNotMutated ensures that any modifications that the webhook
-// may have made are not present in the current kube-apiserver deployment
-func ensureKubeAPIServerIsNotMutated(ps *corev1.PodSpec, c *corev1.Container) {
-	c.Command = extensionswebhook.EnsureNoStringWithPrefix(c.Command, oidcWebhookConfigPrefix)
-	c.Command = extensionswebhook.EnsureNoStringWithPrefix(c.Command, oidcWebhookCacheTTLPrefix)
-	c.VolumeMounts = extensionswebhook.EnsureNoVolumeMountWithName(c.VolumeMounts, oidcAuthenticatorKubeConfigVolumeName)
-	c.VolumeMounts = extensionswebhook.EnsureNoVolumeMountWithName(c.VolumeMounts, tokenValidatorSecretVolumeName)
-	ps.Volumes = extensionswebhook.EnsureNoVolumeWithName(ps.Volumes, oidcAuthenticatorKubeConfigVolumeName)
-	ps.Volumes = extensionswebhook.EnsureNoVolumeWithName(ps.Volumes, tokenValidatorSecretVolumeName)
 }
 
 // ensureKubeAPIServerIsMutated ensures that the kube-apiserver deployment is mutated accordingly

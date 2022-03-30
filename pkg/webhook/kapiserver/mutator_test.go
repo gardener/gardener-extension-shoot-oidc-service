@@ -249,7 +249,14 @@ var _ = Describe("Mutator", func() {
 			checkDeploymentIsCorrectlyMutated(deployment)
 		})
 
-		It("should not add flags to a kube-apiserver pod if webhook secret does not exist", func() {
+		It("should not add oidc configs to a kube-apiserver pod if kube-apiserver deployment does not have ready replicas", func() {
+			deployment.Status.ReadyReplicas = 0
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
+			Expect(err).NotTo(HaveOccurred())
+			checkDeploymentIsNotMutated(deployment)
+		})
+
+		It("should not add oidc configs to a kube-apiserver pod if webhook secret does not exist", func() {
 			client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(errNotFound)
 			err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -271,32 +278,5 @@ var _ = Describe("Mutator", func() {
 			Expect(err.Error()).To(Equal(errInternal.Error()))
 			checkDeploymentIsNotMutated(deployment)
 		})
-
-		// It("should remove oidc configs when secret is deleted", func() {
-		// 	client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(nil)
-		// 	client.EXPECT().Get(ctx, clusterNamespacedName, &extensionsv1alpha1.Cluster{}).DoAndReturn(getCluster(false))
-		// 	err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
-		// 	Expect(err).NotTo(HaveOccurred())
-		// 	checkDeploymentIsCorrectlyMutated(deployment)
-
-		// 	client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(errNotFound)
-		// 	err = ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
-		// 	Expect(err).NotTo(HaveOccurred())
-		// 	checkDeploymentIsNotMutated(deployment)
-		// })
-
-		// It("should remove oidc configs when cluster is hibernated", func() {
-		// 	client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(nil)
-		// 	client.EXPECT().Get(ctx, clusterNamespacedName, &extensionsv1alpha1.Cluster{}).DoAndReturn(getCluster(false))
-		// 	err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
-		// 	Expect(err).NotTo(HaveOccurred())
-		// 	checkDeploymentIsCorrectlyMutated(deployment)
-
-		// 	client.EXPECT().Get(ctx, secretNamespacedName, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(nil)
-		// 	client.EXPECT().Get(ctx, clusterNamespacedName, &extensionsv1alpha1.Cluster{}).DoAndReturn(getCluster(true))
-		// 	err = ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
-		// 	Expect(err).NotTo(HaveOccurred())
-		// 	checkDeploymentIsNotMutated(deployment)
-		// })
 	})
 })
