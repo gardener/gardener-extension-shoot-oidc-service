@@ -93,7 +93,7 @@ check-docforge:
 	@./hack/check-docforge.sh
 
 .PHONY: check
-check: $(GOIMPORTS)
+check: $(GOIMPORTS) $(HELM)
 	go vet ./...
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
