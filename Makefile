@@ -87,19 +87,18 @@ clean:
 check-generate:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-generate.sh $(REPO_ROOT)
 
-# TODO: after next gardener/gardener revendoring use the docforge instance in the tools directory
 .PHONY: check-docforge
-check-docforge:
-	@./hack/check-docforge.sh
+check-docforge: $(DOCFORGE)
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-docforge.sh $(REPO_ROOT) $(REPO_ROOT)/.docforge/manifest.yaml ".docforge/;docs/" "gardener-extension-shoot-oidc-service" false
 
 .PHONY: check
-check: $(GOIMPORTS)
+check: $(GOIMPORTS) $(HELM)
 	go vet ./...
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
 .PHONY: generate
-generate:
-	@GO111MODULE=off hack/update-codegen.sh --parallel
+generate: $(GEN_CRD_API_REFERENCE_DOCS) $(HELM)
+	@GO111MODULE=off hack/update-codegen.sh
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
 
 .PHONY: format
@@ -122,4 +121,4 @@ test-clean:
 verify: check check-docforge format test
 
 .PHONY: verify-extended
-verify-extended: install-requirements check-generate check check-docforge format test test-cov test-clean
+verify-extended: check-generate check check-docforge format test test-cov test-clean
