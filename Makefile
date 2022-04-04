@@ -98,8 +98,8 @@ check: $(GOIMPORTS)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
 .PHONY: generate
-generate:
-	@GO111MODULE=off hack/update-codegen.sh --parallel
+generate: $(GEN_CRD_API_REFERENCE_DOCS) $(HELM)
+	@GO111MODULE=off hack/update-codegen.sh
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
 
 .PHONY: format
@@ -122,4 +122,4 @@ test-clean:
 verify: check check-docforge format test
 
 .PHONY: verify-extended
-verify-extended: install-requirements check-generate check check-docforge format test test-cov test-clean
+verify-extended: check-generate check check-docforge format test test-cov test-clean
