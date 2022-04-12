@@ -24,7 +24,7 @@ ifeq ($(WEBHOOK_CONFIG_MODE), service)
   WEBHOOK_PARAM := --webhook-config-namespace=$(EXTENSION_NAMESPACE)
 endif
 
-TOOLS_DIR := $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools
+TOOLS_DIR := ./hack/tools
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 .PHONY: start
@@ -124,5 +124,5 @@ verify: check check-docforge format test
 verify-extended: check-generate check check-docforge format test test-cov test-clean
 
 .PHONY: test-e2e-local
-test-e2e-local: $(YQ)
+test-e2e-local: $(KIND) $(YQ)
 	@./hack/test-e2e-provider-local.sh
