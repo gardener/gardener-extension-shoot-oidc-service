@@ -123,5 +123,6 @@ verify: check check-docforge format test
 .PHONY: verify-extended
 verify-extended: check-generate check check-docforge format test test-cov test-clean
 
-test-e2e-local: $(KIND) $(YQ)
+.PHONY: test-e2e-local
+test-e2e-local: $(YQ)
 	@./hack/test-e2e-provider-local.sh
