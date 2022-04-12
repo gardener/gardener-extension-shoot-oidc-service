@@ -11,7 +11,7 @@ set -o errexit
 repoRoot="$(readlink -f $(dirname ${0})/..)"
 
 if [[ ! -d "$repoRoot/gardener" ]]; then
-    git clone https://github.com/gardener/gardener.git 
+  git clone https://github.com/gardener/gardener.git
 fi
 
 cd "$repoRoot/gardener"
