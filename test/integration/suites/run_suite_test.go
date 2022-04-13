@@ -15,7 +15,7 @@ import (
 	"github.com/gardener/gardener/test/framework/reporter"
 
 	_ "github.com/gardener/gardener-extension-shoot-oidc-service/test/integration/healthcheck"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -45,5 +45,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestGardenerSuite(t *testing.T) {
-	RunSpecsWithDefaultAndCustomReporters(t, "Shoot-oidc-service Test Suite", []Reporter{reporter.NewGardenerESReporter(*reportFilePath, *esIndex)})
+	RunSpecs(t, "Shoot-oidc-service Test Suite")
 }
+
+var _ = ReportAfterSuite("Report to Elasticsearch", func(report Report) {
+	reporter.ReportResults(*reportFilePath, *esIndex, report)
+})
