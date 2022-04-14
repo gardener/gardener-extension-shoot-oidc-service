@@ -306,6 +306,7 @@ func (a *actuator) getOrCreateTLSSecret(ctx context.Context, certificateConfig s
 
 	config := secrets.ControlPlaneSecretConfig{
 		CertificateSecretConfig: &certificateConfig,
+		Name:                    certificateConfig.Name,
 	}
 
 	controlPlane, err := config.GenerateControlPlane()
