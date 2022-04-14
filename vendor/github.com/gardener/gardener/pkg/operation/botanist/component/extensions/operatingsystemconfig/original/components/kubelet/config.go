@@ -51,7 +51,7 @@ func Config(kubernetesVersion *semver.Version, clusterDNSAddress, clusterDomain 
 				CacheUnauthorizedTTL: metav1.Duration{Duration: 30 * time.Second},
 			},
 		},
-		CgroupDriver:                     "systemd",
+		CgroupDriver:                     "cgroupfs",
 		CgroupRoot:                       "/",
 		CgroupsPerQOS:                    pointer.Bool(true),
 		ClusterDNS:                       []string{clusterDNSAddress},
@@ -90,7 +90,7 @@ func Config(kubernetesVersion *semver.Version, clusterDNSAddress, clusterDomain 
 		ReadOnlyPort:                     0,
 		RegistryBurst:                    10,
 		RegistryPullQPS:                  pointer.Int32(5),
-		ResolverConfig:                   "/etc/resolv.conf",
+		ResolverConfig:                   pointer.String("/etc/resolv.conf"),
 		RotateCertificates:               true,
 		RuntimeRequestTimeout:            metav1.Duration{Duration: 2 * time.Minute},
 		SerializeImagePulls:              params.SerializeImagePulls,
@@ -101,10 +101,6 @@ func Config(kubernetesVersion *semver.Version, clusterDNSAddress, clusterDomain 
 
 	if !version.ConstraintK8sLess119.Check(kubernetesVersion) {
 		config.VolumePluginDir = pathVolumePluginDirectory
-	}
-
-	if version.ConstraintK8sLessEqual122.Check(kubernetesVersion) {
-		config.CgroupDriver = "cgroupfs"
 	}
 
 	return config

@@ -19,6 +19,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
+	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
@@ -129,7 +130,8 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
-	seedResources, err := getSeedResources(oidcReplicas, hibernated, namespace, oidcShootAccessSecret)
+	genericKubeconfigName := extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster)
+	seedResources, err := getSeedResources(oidcReplicas, hibernated, namespace, genericKubeconfigName, oidcShootAccessSecret)
 	if err != nil {
 		return err
 	}
@@ -329,7 +331,7 @@ func getLabels() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace string, shootAccessSecret *gutil.ShootAccessSecret) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName string, shootAccessSecret *gutil.ShootAccessSecret) (map[string][]byte, error) {
 	var (
 		tcpProto         = corev1.ProtocolTCP
 		port10443        = intstr.FromInt(10443)
@@ -432,7 +434,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace string, sh
 							"--v=2",
 						},
 						LivenessProbe: &corev1.Probe{
-							Handler: corev1.Handler{
+							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
 									Path:   "/healthz",
 									Port:   port10443,
@@ -476,7 +478,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace string, sh
 		},
 	}
 
-	if err := gutil.InjectGenericKubeconfig(oidcDeployment, shootAccessSecret.Secret.Name); err != nil {
+	if err := gutil.InjectGenericKubeconfig(oidcDeployment, genericKubeconfigName, shootAccessSecret.Secret.Name); err != nil {
 		return nil, err
 	}
 
