@@ -15,6 +15,7 @@ if [[ ! -d "$repoRoot/gardener" ]]; then
 fi
 
 cd "$repoRoot/gardener"
+git checkout f5882800d5821bcc18198da96324bbe013bb1afe
 make kind-up
 export KUBECONFIG=$repoRoot/gardener/example/provider-local/base/kubeconfig
 make gardener-up
@@ -32,13 +33,5 @@ yq -i e '(select (.providerConfig.values.image) | .providerConfig.values.image.r
 
 kubectl apply -f "$repoRoot/tmp/controller-registration.yaml"
 
-kubectl apply -f "$repoRoot/test/resources/shoot.yaml"
-
-go test -timeout=30m -mod=vendor "$repoRoot/test/system/lifecycle" \
-  --v -ginkgo.v -ginkgo.progress \
-  --shoot-name=local \
-  --project-namespace=garden-local \
-  --kubecfg="$KUBECONFIG"
-
-kubectl -n garden-local annotate shoot "local" confirmation.gardener.cloud/deletion=true
-kubectl -n garden-local delete shoot "local"
+go test -timeout=30m -mod=vendor "$repoRoot/test/e2e/..." \
+  --v -ginkgo.v -ginkgo.progress 
