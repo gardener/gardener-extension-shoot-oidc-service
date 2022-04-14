@@ -34,4 +34,4 @@ yq -i e '(select (.providerConfig.values.image) | .providerConfig.values.image.r
 kubectl apply -f "$repoRoot/tmp/controller-registration.yaml"
 
 go test -timeout=30m -mod=vendor "$repoRoot/test/e2e/..." \
-  --v -ginkgo.v -ginkgo.progress 
+  --v -ginkgo.v -ginkgo.progress
