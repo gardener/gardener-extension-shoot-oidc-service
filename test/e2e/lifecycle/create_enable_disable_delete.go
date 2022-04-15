@@ -18,7 +18,7 @@ var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 	f := defaultShootCreationFramework()
 	f.Shoot = defaultShoot("default-")
 
-	It("Create and Delete", Label("fast"), func() {
+	It("Create Shoot, Enable and Disable OIDC Extension, Delete Shoot", Label("good-case"), func() {
 		By("Create Shoot")
 		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()

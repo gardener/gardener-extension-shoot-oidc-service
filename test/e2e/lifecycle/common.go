@@ -158,3 +158,8 @@ func ensureOIDCResourcesAreCleaned(ctx context.Context, c client.Client, namespa
 		Expect(err).To(BeNotFoundError())
 	}
 }
+
+func addReconcileAnnotation(shoot *gardencorev1beta1.Shoot) error {
+	shoot.Annotations[v1beta1constants.GardenerOperation] = v1beta1constants.GardenerOperationReconcile
+	return nil
+}

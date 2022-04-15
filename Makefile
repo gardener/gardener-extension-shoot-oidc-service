@@ -124,5 +124,5 @@ verify: check check-docforge format test
 verify-extended: check-generate check check-docforge format test test-cov test-clean
 
 .PHONY: test-e2e-local
-test-e2e-local: $(KIND) $(YQ)
-	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh
+test-e2e-local: $(KIND) $(YQ) $(GINKGO)
+	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh --procs=3
