@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package lifecycle
+package e2e_test
 
 import (
 	"context"
@@ -37,10 +37,11 @@ var _ = BeforeEach(func() {
 const projectNamespace = "garden-local"
 
 func defaultShootCreationFramework() *framework.ShootCreationFramework {
+	kubeconfigPath := os.Getenv("KUBECONFIG")
 	return framework.NewShootCreationFramework(&framework.ShootCreationConfig{
 		GardenerConfig: &framework.GardenerConfig{
 			ProjectNamespace:   projectNamespace,
-			GardenerKubeconfig: os.Getenv("KUBECONFIG"),
+			GardenerKubeconfig: kubeconfigPath,
 			SkipAccessingShoot: true,
 			CommonConfig:       &framework.CommonConfig{},
 		},

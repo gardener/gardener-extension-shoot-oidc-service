@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package lifecycle
+package e2e_test
 
 import (
 	"context"
@@ -52,7 +52,7 @@ var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 		By("Disrupt API Server")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
-		breakAPIServerDepl(ctx, seedClient.Client(), shootSeedNamespace)
+		Expect(breakAPIServerDepl(ctx, seedClient.Client(), shootSeedNamespace)).To(Succeed())
 		Eventually(func() error {
 			return ensureNoRunningKubeAPIServerContainers(ctx, seedClient.Client(), shootSeedNamespace)
 		}, time.Minute*2, time.Second*2).Should(Succeed())

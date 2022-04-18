@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package lifecycle
+package e2e_test
 
 import (
 	"context"
@@ -16,9 +16,9 @@ import (
 
 var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 	f := defaultShootCreationFramework()
-	f.Shoot = defaultShoot("default-")
+	f.Shoot = defaultShoot("hibernated-")
 
-	It("Create Shoot, Enable OIDC Extension, Delete Shoot", Label("good-case"), func() {
+	It("Create Shoot, Enable OIDC Extension, Hibernate and Delete Shoot", Label("good-case"), func() {
 		By("Create Shoot")
 		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
@@ -41,6 +41,11 @@ var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 		one := int32(1)
 		Expect(*depl.Spec.Replicas).To(BeNumerically(">=", one))
 		Expect(depl.Status.ReadyReplicas).To(BeNumerically(">=", one))
+
+		By("Hibernate Shoot")
+		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
+		defer cancel()
+		Expect(f.HibernateShoot(ctx, f.Shoot)).To(Succeed())
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
