@@ -9,9 +9,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	// imported test specs
-	_ "github.com/gardener/gardener-extension-shoot-oidc-service/test/e2e/lifecycle"
 )
 
 func TestE2E(t *testing.T) {
