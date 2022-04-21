@@ -7,4 +7,4 @@ images:
 - name: oidc-webhook-authenticator
   sourceRepository: github.com/gardener/oidc-webhook-authenticator
   repository: eu.gcr.io/gardener-project/gardener/oidc-webhook-authenticator
-  tag: "v0.8.0"
+  tag: "v0.9.0"
