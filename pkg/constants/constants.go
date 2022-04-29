@@ -9,6 +9,8 @@ const (
 	ExtensionType = "shoot-oidc-service"
 	// ServiceName is the name of the service.
 	ServiceName = ExtensionType
+	// SecretsManagerIdentity is the identity used for the secrets manager.
+	SecretsManagerIdentity = "extension-" + ExtensionType
 
 	extensionServiceName = "extension-" + ServiceName
 	// ManagedResourceNamesSeed is the name used to describe the managed seed resources.

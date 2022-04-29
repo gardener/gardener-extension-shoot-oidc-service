@@ -13,17 +13,20 @@ import (
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
+
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
-	"github.com/gardener/gardener/extensions/pkg/util"
+	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
-	"github.com/gardener/gardener/pkg/utils/secrets"
+	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/go-logr/logr"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -37,13 +40,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -130,29 +133,56 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
-	genericKubeconfigName := extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster)
-	seedResources, err := getSeedResources(oidcReplicas, hibernated, namespace, genericKubeconfigName, oidcShootAccessSecret)
+	// initialize SecretsManager based on Cluster object
+	var (
+		caName        = "ca-extension-shoot-oidc-service"
+		secretConfigs = []extensionssecretsmanager.SecretConfigWithOptions{
+			{
+				Config: &secretutils.CertificateSecretConfig{
+					Name:       caName,
+					CommonName: caName,
+					CertType:   secretutils.CACert,
+				},
+				Options: []secretsmanager.GenerateOption{secretsmanager.Persist()},
+			},
+			{
+				Config: &secretutils.CertificateSecretConfig{
+					Name:       constants.WebhookTLSecretName,
+					CommonName: constants.ApplicationName,
+					DNSNames:   kutil.DNSNamesForService(constants.ApplicationName, namespace),
+					CertType:   secretutils.ServerCert,
+				},
+				// use current CA for signing server cert to prevent mismatches when dropping the old CA from the webhook
+				// config in phase Completing
+				Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(caName, secretsmanager.UseCurrentCA)},
+			},
+		}
+	)
+
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, constants.SecretsManagerIdentity, nil)
 	if err != nil {
 		return err
 	}
 
-	tlsSecret, err := a.getOrCreateTLSSecret(ctx, secrets.CertificateSecretConfig{
-		Name:       constants.WebhookTLSecretName,
-		CommonName: constants.ApplicationName,
-		DNSNames: []string{
-			constants.ApplicationName,
-			fmt.Sprintf("%s.%s", constants.ApplicationName, namespace),
-			fmt.Sprintf("%s.%s.svc", constants.ApplicationName, namespace),
-			fmt.Sprintf("%s.%s.svc.cluster.local", constants.ApplicationName, namespace),
-		},
-	}, namespace)
+	secrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, secretConfigs)
+	if err != nil {
+		return err
+	}
 
+	seedResources, err := getSeedResources(
+		oidcReplicas,
+		hibernated,
+		namespace,
+		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
+		oidcShootAccessSecret.Secret.Name,
+		secrets[constants.WebhookTLSecretName].Name,
+	)
 	if err != nil {
 		return err
 	}
 
 	shootResources, err := getShootResources(
-		tlsSecret.Data[secrets.DataKeyCertificateCA],
+		secrets[caName].Data[secretutils.DataKeyCertificateBundle],
 		namespace,
 		oidcShootAccessSecret.ServiceAccountName,
 		tokenValidatorShootAccessSecret.ServiceAccountName,
@@ -185,7 +215,16 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		},
 	}
 
-	return a.client.Patch(ctx, depl, client.RawPatch(types.StrategicMergePatchType, []byte("{}")))
+	if err := a.client.Patch(ctx, depl, client.RawPatch(types.StrategicMergePatchType, []byte("{}"))); err != nil {
+		return err
+	}
+
+	if err := secretsManager.Cleanup(ctx); err != nil {
+		return err
+	}
+
+	// TODO(rfranzke): Remove in a future release
+	return kutil.DeleteObject(ctx, a.client, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookTLSecretName, Namespace: namespace}})
 }
 
 // Delete the Extension resource.
@@ -218,6 +257,7 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 	for _, name := range []string{
 		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
 		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
+		// TODO(rfranzke): Remove this in a future release.
 		constants.WebhookTLSecretName,
 	} {
 		if err := a.deleteSecret(ctx, name, namespace); err != nil {
@@ -225,7 +265,17 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 		}
 	}
 
-	return nil
+	cluster, err := controller.GetCluster(ctx, a.client, namespace)
+	if err != nil {
+		return err
+	}
+
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, constants.SecretsManagerIdentity, nil)
+	if err != nil {
+		return err
+	}
+
+	return secretsManager.Cleanup(ctx)
 }
 
 func (a *actuator) deleteSecret(ctx context.Context, name, namespace string) error {
@@ -270,69 +320,13 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (a *actuator) getOrCreateTLSSecret(ctx context.Context, certificateConfig secrets.CertificateSecretConfig, namespace string) (*corev1.Secret, error) {
-	caSecret, ca, err := secrets.LoadCAFromSecret(ctx, a.client, namespace, v1beta1constants.SecretNameCACluster)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching CA secret %s/%s: %v", namespace, v1beta1constants.SecretNameCACluster, err)
-	}
-
-	var (
-		secret = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: make(map[string]string),
-				Name:        certificateConfig.Name,
-				Namespace:   namespace,
-			},
-		}
-		key = types.NamespacedName{
-			Name:      certificateConfig.Name,
-			Namespace: namespace,
-		}
-	)
-	if err := a.client.Get(ctx, key, &secret); client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("error preparing kubeconfig: %v", err)
-	}
-
-	var (
-		computedChecksum   = utils.ComputeChecksum(caSecret.Data)
-		storedChecksum, ok = secret.Annotations[util.CAChecksumAnnotation]
-	)
-	if ok && computedChecksum == storedChecksum {
-		return &secret, nil
-	}
-
-	certificateConfig.SigningCA = ca
-	certificateConfig.CertType = secrets.ServerCert
-
-	config := secrets.ControlPlaneSecretConfig{
-		CertificateSecretConfig: &certificateConfig,
-		Name:                    certificateConfig.Name,
-	}
-
-	controlPlane, err := config.GenerateControlPlane()
-	if err != nil {
-		return nil, fmt.Errorf("error creating kubeconfig: %v", err)
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, a.client, &secret, func() error {
-		secret.Data = controlPlane.SecretData()
-		if secret.Annotations == nil {
-			secret.Annotations = make(map[string]string)
-		}
-		secret.Annotations[util.CAChecksumAnnotation] = computedChecksum
-		return nil
-	})
-
-	return &secret, err
-}
-
 func getLabels() map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/name": constants.ApplicationName,
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName string, shootAccessSecret *gutil.ShootAccessSecret) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string) (map[string][]byte, error) {
 	var (
 		tcpProto         = corev1.ProtocolTCP
 		port10443        = intstr.FromInt(10443)
@@ -428,8 +422,8 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							"--kubeconfig=" + gutil.PathGenericKubeconfig,
 							"--authentication-kubeconfig=" + gutil.PathGenericKubeconfig,
 							"--authorization-kubeconfig=" + gutil.PathGenericKubeconfig,
-							fmt.Sprintf("--tls-cert-file=%s/%s.crt", constants.WebhookTLSCertDir, constants.WebhookTLSecretName),
-							fmt.Sprintf("--tls-private-key-file=%s/%s.key", constants.WebhookTLSCertDir, constants.WebhookTLSecretName),
+							fmt.Sprintf("--tls-cert-file=%s/tls.crt", constants.WebhookTLSCertDir),
+							fmt.Sprintf("--tls-private-key-file=%s/tls.key", constants.WebhookTLSCertDir),
 							"--authorization-always-allow-paths=\"/webhooks/validating\"",
 							//fmt.Sprintf("--api-audiences=oidc-webhook-authenticator-%s", namespace),
 							"--v=2",
@@ -469,7 +463,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							Name: "tls",
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: constants.WebhookTLSecretName,
+									SecretName: serverTLSSecretName,
 								},
 							},
 						},
@@ -479,7 +473,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		},
 	}
 
-	if err := gutil.InjectGenericKubeconfig(oidcDeployment, genericKubeconfigName, shootAccessSecret.Secret.Name); err != nil {
+	if err := gutil.InjectGenericKubeconfig(oidcDeployment, genericKubeconfigName, shootAccessSecretName); err != nil {
 		return nil, err
 	}
 
