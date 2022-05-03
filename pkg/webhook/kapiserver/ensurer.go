@@ -6,20 +6,25 @@ package kapiserver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
+
 	"github.com/gardener/gardener/extensions/pkg/controller"
+	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
-
+	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -44,6 +49,10 @@ func (e *ensurer) InjectClient(client client.Client) error {
 	return nil
 }
 
+// NewSecretsManager is an alias for extensionssecretsmanager.SecretsManagerForCluster.
+// exposed for testing
+var NewSecretsManager = extensionssecretsmanager.SecretsManagerForCluster
+
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the oidc-webhook-authenticator requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, new, _ *appsv1.Deployment) error {
 	template := &new.Spec.Template
@@ -54,29 +63,38 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return nil
 		}
 
-		namespacedName := types.NamespacedName{
-			Namespace: new.Namespace,
-			Name:      constants.WebhookKubeConfigSecretName,
-		}
-		secret := &corev1.Secret{}
-
-		if err := e.client.Get(ctx, namespacedName, secret); err != nil {
+		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookKubeConfigSecretName, Namespace: new.Namespace}}
+		if err := e.client.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil
-			} else {
-				return err
 			}
+			return err
 		}
 
 		cluster, err := controller.GetCluster(ctx, e.client, new.Namespace)
 		if err != nil {
 			return err
 		}
+
 		if controller.IsHibernated(cluster) {
 			return nil
 		}
 
-		ensureKubeAPIServerIsMutated(ps, c)
+		secretsManager, err := NewSecretsManager(ctx, e.logger.WithName("secretsmanager"), clock.RealClock{}, e.client, cluster, secrets.ManagerIdentity, secrets.ConfigsFor(new.Namespace))
+		if err != nil {
+			return err
+		}
+
+		if _, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, secrets.ConfigsFor(new.Namespace)); err != nil {
+			return err
+		}
+
+		caBundleSecret, found := secretsManager.Get(secrets.CAName)
+		if !found {
+			return fmt.Errorf("secret %q not found", secrets.CAName)
+		}
+
+		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)
 	}
 
 	return nil
@@ -91,20 +109,20 @@ func NewEnsurer(logger logr.Logger) genericmutator.Ensurer {
 
 // ensureKubeAPIServerIsMutated ensures that the kube-apiserver deployment is mutated accordingly
 // so that it is able to communicate with the oidc-webhook-authenticator
-func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container) {
-	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookConfigPrefix, "/var/run/secrets/oidc-webhook/authenticator/kubeconfig")
+func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container, caBundleSecretName string) {
+	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookConfigPrefix, constants.AuthenticatorDir+"/kubeconfig")
 	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookCacheTTLPrefix, "0")
 
 	c.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(c.VolumeMounts, corev1.VolumeMount{
 		Name:      oidcAuthenticatorKubeConfigVolumeName,
 		ReadOnly:  true,
-		MountPath: "/var/run/secrets/oidc-webhook/authenticator",
+		MountPath: constants.AuthenticatorDir,
 	})
 
 	c.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(c.VolumeMounts, corev1.VolumeMount{
 		Name:      tokenValidatorSecretVolumeName,
 		ReadOnly:  true,
-		MountPath: "/var/run/secrets/oidc-webhook/token-validator",
+		MountPath: constants.TokenValidatorDir,
 	})
 
 	ps.Volumes = extensionswebhook.EnsureVolumeWithName(ps.Volumes, corev1.Volume{
@@ -125,10 +143,10 @@ func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container) {
 					{
 						Secret: &corev1.SecretProjection{
 							Items: []corev1.KeyToPath{
-								{Key: "ca.crt", Path: "ca.crt"},
+								{Key: secretutils.DataKeyCertificateBundle, Path: secretutils.DataKeyCertificateBundle},
 							},
 							LocalObjectReference: corev1.LocalObjectReference{
-								Name: v1beta1constants.SecretNameCACluster,
+								Name: caBundleSecretName,
 							},
 						},
 					},

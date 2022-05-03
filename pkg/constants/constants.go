@@ -9,8 +9,6 @@ const (
 	ExtensionType = "shoot-oidc-service"
 	// ServiceName is the name of the service.
 	ServiceName = ExtensionType
-	// SecretsManagerIdentity is the identity used for the secrets manager.
-	SecretsManagerIdentity = "extension-" + ExtensionType
 
 	extensionServiceName = "extension-" + ServiceName
 	// ManagedResourceNamesSeed is the name used to describe the managed seed resources.
@@ -28,8 +26,6 @@ const (
 	WebhookTLSSecretName = ApplicationName + "-tls"
 	// WebhookTLSCertDir is the directory used for mounting the webhook certificates.
 	WebhookTLSCertDir = "/var/run/oidc-webhook-authenticator/tls"
-	// WebhookServiceAccountTokenDir is the directory used for mounting the projected service account token in the webhook authenticator pod.
-	WebhookServiceAccountTokenDir = "/var/run/oidc-webhook-authenticator/serviceaccount"
 	// WebhookKubeConfigSecretName is the name of the secret providing the kubeconfig for connection to the webhook authenticator.
 	WebhookKubeConfigSecretName = ApplicationName + "-kubeconfig"
 	// OIDCResourceReader is the name of the RBAC resources created in the shoot cluster that allow reading authentication.gardener.cloud.openidconnects.
@@ -40,4 +36,8 @@ const (
 	ExtensionAuthReader = ApplicationName + "-authentication-reader"
 	// TokenValidator is used to name the resources used to allow the kube-apiserver to validate tokens against the oidc authenticator.
 	TokenValidator = ApplicationName + "-token-validator"
+	// TokenValidatorDir is the path were the token-validator related secrets are mounted in the kube-apiserver pod.
+	TokenValidatorDir = "/var/run/secrets/oidc-webhook/token-validator"
+	// AuthenticatorDir is the path were the authenticator related secrets are mounted in the kube-apiserver pod.
+	AuthenticatorDir = "/var/run/secrets/oidc-webhook/authenticator"
 )

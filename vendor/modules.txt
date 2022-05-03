@@ -106,7 +106,6 @@ github.com/gardener/gardener/pkg/extensions
 github.com/gardener/gardener/pkg/gardenlet/apis/config
 github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1
 github.com/gardener/gardener/pkg/logger
-github.com/gardener/gardener/pkg/mock/controller-runtime/client
 github.com/gardener/gardener/pkg/operation/botanist/component/extensions/operatingsystemconfig/original/components
 github.com/gardener/gardener/pkg/operation/botanist/component/extensions/operatingsystemconfig/original/components/containerd
 github.com/gardener/gardener/pkg/operation/botanist/component/extensions/operatingsystemconfig/original/components/docker
@@ -131,6 +130,7 @@ github.com/gardener/gardener/pkg/utils/managedresources/builder
 github.com/gardener/gardener/pkg/utils/retry
 github.com/gardener/gardener/pkg/utils/secrets
 github.com/gardener/gardener/pkg/utils/secrets/manager
+github.com/gardener/gardener/pkg/utils/secrets/manager/fake
 github.com/gardener/gardener/pkg/utils/test/matchers
 github.com/gardener/gardener/pkg/utils/timewindow
 github.com/gardener/gardener/pkg/utils/version
@@ -200,8 +200,6 @@ github.com/gogo/protobuf/vanity/command
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 github.com/golang/groupcache/lru
 # github.com/golang/mock v1.6.0
-## explicit
-github.com/golang/mock/gomock
 github.com/golang/mock/mockgen
 github.com/golang/mock/mockgen/model
 # github.com/golang/protobuf v1.5.2
@@ -761,6 +759,7 @@ k8s.io/client-go/plugin/pkg/client/auth/exec
 k8s.io/client-go/rest
 k8s.io/client-go/rest/watch
 k8s.io/client-go/restmapper
+k8s.io/client-go/testing
 k8s.io/client-go/tools/auth
 k8s.io/client-go/tools/cache
 k8s.io/client-go/tools/clientcmd
@@ -902,6 +901,7 @@ sigs.k8s.io/controller-runtime/pkg/cache/internal
 sigs.k8s.io/controller-runtime/pkg/certwatcher
 sigs.k8s.io/controller-runtime/pkg/client
 sigs.k8s.io/controller-runtime/pkg/client/apiutil
+sigs.k8s.io/controller-runtime/pkg/client/fake
 sigs.k8s.io/controller-runtime/pkg/cluster
 sigs.k8s.io/controller-runtime/pkg/config
 sigs.k8s.io/controller-runtime/pkg/config/v1alpha1

@@ -13,6 +13,7 @@ import (
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
@@ -24,9 +25,8 @@ import (
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
-	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
+	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
-	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/go-logr/logr"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -134,44 +134,19 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 	}
 
 	// initialize SecretsManager based on Cluster object
-	var (
-		caName        = "ca-extension-shoot-oidc-service"
-		secretConfigs = []extensionssecretsmanager.SecretConfigWithOptions{
-			{
-				Config: &secretutils.CertificateSecretConfig{
-					Name:       caName,
-					CommonName: caName,
-					CertType:   secretutils.CACert,
-				},
-				Options: []secretsmanager.GenerateOption{secretsmanager.Persist()},
-			},
-			{
-				Config: &secretutils.CertificateSecretConfig{
-					Name:       constants.WebhookTLSSecretName,
-					CommonName: constants.ApplicationName,
-					DNSNames:   kutil.DNSNamesForService(constants.ApplicationName, namespace),
-					CertType:   secretutils.ServerCert,
-				},
-				// use current CA for signing server cert to prevent mismatches when dropping the old CA from the webhook
-				// config in phase Completing
-				Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(caName, secretsmanager.UseCurrentCA)},
-			},
-		}
-	)
-
-	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, constants.SecretsManagerIdentity, secretConfigs)
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, secrets.ConfigsFor(namespace))
 	if err != nil {
 		return err
 	}
 
-	secrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, secretConfigs)
+	generatedSecrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, secrets.ConfigsFor(namespace))
 	if err != nil {
 		return err
 	}
 
-	caBundleSecret, found := secretsManager.Get(caName)
+	caBundleSecret, found := secretsManager.Get(secrets.CAName)
 	if !found {
-		return fmt.Errorf("secret %q not found", caName)
+		return fmt.Errorf("secret %q not found", secrets.CAName)
 	}
 
 	seedResources, err := getSeedResources(
@@ -180,7 +155,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		namespace,
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
-		secrets[constants.WebhookTLSSecretName].Name,
+		generatedSecrets[constants.WebhookTLSSecretName].Name,
 	)
 	if err != nil {
 		return err
@@ -192,7 +167,6 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		oidcShootAccessSecret.ServiceAccountName,
 		tokenValidatorShootAccessSecret.ServiceAccountName,
 	)
-
 	if err != nil {
 		return err
 	}
@@ -275,7 +249,7 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 		return err
 	}
 
-	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, constants.SecretsManagerIdentity, nil)
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, nil)
 	if err != nil {
 		return err
 	}
@@ -347,7 +321,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 			Name: constants.ApplicationName,
 			Cluster: configv1.Cluster{
 				Server:                fmt.Sprintf("https://%s.%s/validate-token", constants.ApplicationName, namespace),
-				CertificateAuthority:  "/var/run/secrets/oidc-webhook/token-validator/ca.crt",
+				CertificateAuthority:  fmt.Sprintf("%s/%s", constants.TokenValidatorDir, secretutils.DataKeyCertificateBundle),
 				InsecureSkipTLSVerify: false,
 			},
 		}},
@@ -362,7 +336,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		AuthInfos: []configv1.NamedAuthInfo{{
 			Name: constants.ApplicationName,
 			AuthInfo: configv1.AuthInfo{
-				TokenFile: "/var/run/secrets/oidc-webhook/token-validator/token",
+				TokenFile: constants.TokenValidatorDir + "/token",
 			},
 		}},
 	}
