@@ -134,12 +134,14 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 	}
 
 	// initialize SecretsManager based on Cluster object
-	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, secrets.ConfigsFor(namespace))
+	configs := secrets.ConfigsFor(namespace)
+
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, configs)
 	if err != nil {
 		return err
 	}
 
-	generatedSecrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, secrets.ConfigsFor(namespace))
+	generatedSecrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, configs)
 	if err != nil {
 		return err
 	}

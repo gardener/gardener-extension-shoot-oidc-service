@@ -80,12 +80,14 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return nil
 		}
 
-		secretsManager, err := NewSecretsManager(ctx, e.logger.WithName("secretsmanager"), clock.RealClock{}, e.client, cluster, secrets.ManagerIdentity, secrets.ConfigsFor(new.Namespace))
+		configs := secrets.ConfigsFor(new.Namespace)
+
+		secretsManager, err := NewSecretsManager(ctx, e.logger.WithName("secretsmanager"), clock.RealClock{}, e.client, cluster, secrets.ManagerIdentity, configs)
 		if err != nil {
 			return err
 		}
 
-		if _, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, secrets.ConfigsFor(new.Namespace)); err != nil {
+		if _, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, configs); err != nil {
 			return err
 		}
 
