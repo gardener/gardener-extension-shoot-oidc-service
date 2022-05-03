@@ -24,8 +24,8 @@ const (
 	ImageName = ApplicationName
 	// WebhookConfigurationName is the name of the webhook configuration(s) deployed in the shoot cluster.
 	WebhookConfigurationName = ApplicationName + "-shoot"
-	// WebhookTLSecretName is the name of the TLS secret resource used by the OIDC webhook in the seed cluster.
-	WebhookTLSecretName = ApplicationName + "-tls"
+	// WebhookTLSSecretName is the name of the TLS secret resource used by the OIDC webhook in the seed cluster.
+	WebhookTLSSecretName = ApplicationName + "-tls"
 	// WebhookTLSCertDir is the directory used for mounting the webhook certificates.
 	WebhookTLSCertDir = "/var/run/oidc-webhook-authenticator/tls"
 	// WebhookServiceAccountTokenDir is the directory used for mounting the projected service account token in the webhook authenticator pod.

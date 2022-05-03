@@ -147,7 +147,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 			},
 			{
 				Config: &secretutils.CertificateSecretConfig{
-					Name:       constants.WebhookTLSecretName,
+					Name:       constants.WebhookTLSSecretName,
 					CommonName: constants.ApplicationName,
 					DNSNames:   kutil.DNSNamesForService(constants.ApplicationName, namespace),
 					CertType:   secretutils.ServerCert,
@@ -159,7 +159,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		}
 	)
 
-	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, constants.SecretsManagerIdentity, nil)
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, constants.SecretsManagerIdentity, secretConfigs)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		namespace,
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
-		secrets[constants.WebhookTLSecretName].Name,
+		secrets[constants.WebhookTLSSecretName].Name,
 	)
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 	}
 
 	// TODO(rfranzke): Remove in a future release
-	return kutil.DeleteObject(ctx, a.client, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookTLSecretName, Namespace: namespace}})
+	return kutil.DeleteObject(ctx, a.client, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookTLSSecretName, Namespace: namespace}})
 }
 
 // Delete the Extension resource.
@@ -258,7 +258,7 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
 		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
 		// TODO(rfranzke): Remove this in a future release.
-		constants.WebhookTLSecretName,
+		constants.WebhookTLSSecretName,
 	} {
 		if err := a.deleteSecret(ctx, name, namespace); err != nil {
 			return err
