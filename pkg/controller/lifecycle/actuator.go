@@ -169,6 +169,11 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
+	caBundleSecret, found := secretsManager.Get(caName)
+	if !found {
+		return fmt.Errorf("secret %q not found", caName)
+	}
+
 	seedResources, err := getSeedResources(
 		oidcReplicas,
 		hibernated,
@@ -182,7 +187,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 	}
 
 	shootResources, err := getShootResources(
-		secrets[caName].Data[secretutils.DataKeyCertificateBundle],
+		caBundleSecret.Data[secretutils.DataKeyCertificateBundle],
 		namespace,
 		oidcShootAccessSecret.ServiceAccountName,
 		tokenValidatorShootAccessSecret.ServiceAccountName,
