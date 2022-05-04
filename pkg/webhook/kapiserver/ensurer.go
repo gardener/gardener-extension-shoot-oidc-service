@@ -6,7 +6,6 @@ package kapiserver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
@@ -87,13 +86,10 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return err
 		}
 
-		if _, err := extensionssecretsmanager.GenerateAllSecrets(ctx, secretsManager, configs); err != nil {
-			return err
-		}
-
+		// Leave the responsibility to generate the CA bundle secret to the lifecycle controller
 		caBundleSecret, found := secretsManager.Get(secrets.CAName)
 		if !found {
-			return fmt.Errorf("secret %q not found", secrets.CAName)
+			return nil
 		}
 
 		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)

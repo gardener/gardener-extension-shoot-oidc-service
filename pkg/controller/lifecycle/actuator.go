@@ -469,6 +469,9 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				"kubeconfig": kubeAPIServerKubeConfig,
 			},
 		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if oidcReplicas != nil && *oidcReplicas > 0 {
