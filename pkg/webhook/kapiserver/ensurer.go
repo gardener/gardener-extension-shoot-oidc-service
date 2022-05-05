@@ -6,9 +6,12 @@ package kapiserver
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -23,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -79,17 +81,14 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return nil
 		}
 
-		configs := secrets.ConfigsFor(new.Namespace)
-
-		secretsManager, err := NewSecretsManager(ctx, e.logger.WithName("secretsmanager"), clock.RealClock{}, e.client, cluster, secrets.ManagerIdentity, configs)
+		// we expect that the CA bundle secret is handled by the lifecycle controller
+		caBundleSecret, err := getLatestIssuedCABundleSecret(ctx, e.client, new.Namespace)
 		if err != nil {
+			// if CA secret is still not created we do not want to return an error
+			if _, ok := err.(*NoCASecretError); ok {
+				return nil
+			}
 			return err
-		}
-
-		// Leave the responsibility to generate the CA bundle secret to the lifecycle controller
-		caBundleSecret, found := secretsManager.Get(secrets.CAName)
-		if !found {
-			return nil
 		}
 
 		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)
@@ -162,4 +161,59 @@ func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container, caBun
 			},
 		},
 	})
+}
+
+// getLatestIssuedCABundleSecret returns the oidc-webhook latest CA bundle secret
+func getLatestIssuedCABundleSecret(ctx context.Context, c client.Client, namespace string) (*corev1.Secret, error) {
+	secretList := &corev1.SecretList{}
+	if err := c.List(ctx, secretList, client.InNamespace(namespace), client.MatchingLabels{
+		secretsmanager.LabelKeyBundleFor:       secrets.CAName,
+		secretsmanager.LabelKeyManagedBy:       secretsmanager.LabelValueSecretsManager,
+		secretsmanager.LabelKeyManagerIdentity: secrets.ManagerIdentity,
+	}); err != nil {
+		return nil, err
+	}
+	return getLatestIssuedSecret(secretList.Items)
+}
+
+// getLatestIssuedSecret returns the secret with the "issued-at-time" label that represents the latest point in time
+func getLatestIssuedSecret(secrets []corev1.Secret) (*corev1.Secret, error) {
+	if len(secrets) == 0 {
+		return nil, &NoCASecretError{}
+	}
+
+	newestSecret := &secrets[0]
+	initialIssuedAt, ok := secrets[0].Labels[secretsmanager.LabelKeyIssuedAtTime]
+	if !ok {
+		return nil, &NoIssuedAtTimeError{secretName: secrets[0].Name, namespace: secrets[0].Namespace}
+	}
+
+	initialIssuedAtUnix, err := strconv.ParseInt(initialIssuedAt, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	currentIssuedAtTime := time.Unix(initialIssuedAtUnix, 0).UTC()
+
+	for i := 0; i < len(secrets); i++ {
+		// if some of the secrets have no "issued-at-time" label
+		// we have a problem since this is the source of truth
+		issuedAt, ok := secrets[i].Labels[secretsmanager.LabelKeyIssuedAtTime]
+		if !ok {
+			return nil, &NoIssuedAtTimeError{secretName: secrets[i].Name, namespace: secrets[i].Namespace}
+		}
+
+		issuedAtUnix, err := strconv.ParseInt(issuedAt, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		issuedAtTime := time.Unix(issuedAtUnix, 0).UTC()
+
+		if issuedAtTime.After(currentIssuedAtTime) {
+			newestSecret = &secrets[i]
+			currentIssuedAtTime = issuedAtTime
+		}
+	}
+
+	return newestSecret, nil
 }

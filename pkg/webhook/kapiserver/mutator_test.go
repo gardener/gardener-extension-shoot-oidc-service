@@ -7,12 +7,13 @@ package kapiserver
 import (
 	"context"
 	"encoding/json"
+	mathrand "math/rand"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 
-	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -20,16 +21,13 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
-	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
-	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/clock"
+	rand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -46,7 +44,6 @@ var _ = Describe("Mutator", func() {
 	var (
 		ctx        = context.Background()
 		fakeClient client.Client
-		sm         secretsmanager.Interface
 
 		oidcAuthenticatorKubeConfigVolumeMount = corev1.VolumeMount{
 			Name:      oidcAuthenticatorKubeConfigVolumeName,
@@ -180,7 +177,6 @@ var _ = Describe("Mutator", func() {
 
 	BeforeEach(func() {
 		fakeClient = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
-		sm = fakesecretsmanager.New(fakeClient, namespace)
 	})
 
 	Describe("MutateKubeAPIServerDeployments", func() {
@@ -213,14 +209,21 @@ var _ = Describe("Mutator", func() {
 		})
 
 		It("should add missing flags to a kube-apiserver pod", func() {
-			oldNewSecretsManager := NewSecretsManager
-			NewSecretsManager = func(_ context.Context, _ logr.Logger, _ clock.Clock, _ client.Client, _ *extensionscontroller.Cluster, _ string, _ []extensionssecretsmanager.SecretConfigWithOptions) (secretsmanager.Interface, error) {
-				return sm, nil
-			}
-			defer func() { NewSecretsManager = oldNewSecretsManager }()
-
 			Expect(fakeClient.Create(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: constants.WebhookKubeConfigSecretName}})).To(Succeed())
 			Expect(fakeClient.Create(ctx, getCluster(false))).To(Succeed())
+			Expect(fakeClient.Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "ca-extension-shoot-oidc-service",
+					Labels: map[string]string{
+						"issued-at-time":   strconv.FormatInt(time.Now().Unix(), 10),
+						"bundle-for":       "ca-extension-shoot-oidc-service",
+						"managed-by":       "secrets-manager",
+						"manager-identity": "extension-shoot-oidc-service",
+					},
+				},
+				Data: map[string][]byte{"bundle.crt": []byte("test")},
+			})).To(Succeed())
 
 			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).To(Succeed())
 			checkDeploymentIsCorrectlyMutated(deployment)
@@ -232,14 +235,21 @@ var _ = Describe("Mutator", func() {
 				"--authentication-token-webhook-config-file=?",
 			}
 
-			oldNewSecretsManager := NewSecretsManager
-			NewSecretsManager = func(_ context.Context, _ logr.Logger, _ clock.Clock, _ client.Client, _ *extensionscontroller.Cluster, _ string, _ []extensionssecretsmanager.SecretConfigWithOptions) (secretsmanager.Interface, error) {
-				return sm, nil
-			}
-			defer func() { NewSecretsManager = oldNewSecretsManager }()
-
 			Expect(fakeClient.Create(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: constants.WebhookKubeConfigSecretName}})).To(Succeed())
 			Expect(fakeClient.Create(ctx, getCluster(false))).To(Succeed())
+			Expect(fakeClient.Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "ca-extension-shoot-oidc-service",
+					Labels: map[string]string{
+						"issued-at-time":   strconv.FormatInt(time.Now().Unix(), 10),
+						"bundle-for":       "ca-extension-shoot-oidc-service",
+						"managed-by":       "secrets-manager",
+						"manager-identity": "extension-shoot-oidc-service",
+					},
+				},
+				Data: map[string][]byte{"bundle.crt": []byte("test")},
+			})).To(Succeed())
 
 			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).To(Succeed())
 			checkDeploymentIsCorrectlyMutated(deployment)
@@ -268,5 +278,72 @@ var _ = Describe("Mutator", func() {
 			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).To(Succeed())
 			checkDeploymentIsNotMutated(deployment)
 		})
+
+		It("should not add missing flags to a kube-apiserver pod if ca bundle secret is not available", func() {
+			Expect(fakeClient.Create(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: constants.WebhookKubeConfigSecretName}})).To(Succeed())
+			Expect(fakeClient.Create(ctx, getCluster(false))).To(Succeed())
+
+			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).To(Succeed())
+			checkDeploymentIsNotMutated(deployment)
+		})
+
+		It("should not add missing flags to a kube-apiserver pod if ca bundle secret does not contain issued-at-time label", func() {
+			Expect(fakeClient.Create(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: constants.WebhookKubeConfigSecretName}})).To(Succeed())
+			Expect(fakeClient.Create(ctx, getCluster(false))).To(Succeed())
+			Expect(fakeClient.Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "ca-extension-shoot-oidc-service",
+					Labels: map[string]string{
+						"bundle-for":       "ca-extension-shoot-oidc-service",
+						"managed-by":       "secrets-manager",
+						"manager-identity": "extension-shoot-oidc-service",
+					},
+				},
+				Data: map[string][]byte{"bundle.crt": []byte("test")},
+			})).To(Succeed())
+
+			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).Error()
+			checkDeploymentIsNotMutated(deployment)
+		})
+	})
+})
+
+var _ = Describe("Secrets filter", func() {
+	It("should correctly extract the secret with the newest ca bundle", func() {
+		secrets := make([]corev1.Secret, 31)
+		namespace := "test"
+		mathrand.Seed(time.Now().UnixNano())
+		now := time.Now().Unix()
+		for i := 0; i < 30; i++ {
+			name := rand.String(10)
+			timestamp := rand.Int63nRange(now, now+5000)
+			secrets[i] = corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace,
+					Labels: map[string]string{
+						"issued-at-time": strconv.FormatInt(timestamp, 10),
+					},
+				},
+			}
+		}
+		secrets[30] = corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "this is the one",
+				Namespace: namespace,
+				Labels: map[string]string{
+					"issued-at-time": strconv.FormatInt(now+5001, 10),
+				},
+			},
+		}
+
+		for i := 0; i < 20; i++ {
+			mathrand.Shuffle(len(secrets), func(i, j int) { secrets[i], secrets[j] = *secrets[j].DeepCopy(), *secrets[i].DeepCopy() })
+
+			newest, err := getLatestIssuedSecret(secrets)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(newest.Name).To(Equal("this is the one"))
+		}
 	})
 })
