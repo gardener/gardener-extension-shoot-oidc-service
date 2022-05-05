@@ -6,17 +6,17 @@ package kapiserver
 
 import "fmt"
 
-type NoCASecretError struct{}
+type noCASecretError struct{}
 
-func (e *NoCASecretError) Error() string {
+func (e *noCASecretError) Error() string {
 	return "CA bundle secret is yet not available"
 }
 
-type NoIssuedAtTimeError struct {
+type noIssuedAtTimeError struct {
 	secretName string
 	namespace  string
 }
 
-func (e *NoIssuedAtTimeError) Error() string {
-	return fmt.Sprintf("CA bundle secret %s in namsepace %s has no \"issued-at-time\" label", e.secretName, e.namespace)
+func (e *noIssuedAtTimeError) Error() string {
+	return fmt.Sprintf("CA bundle secret %s in namespace %s has no \"issued-at-time\" label", e.secretName, e.namespace)
 }

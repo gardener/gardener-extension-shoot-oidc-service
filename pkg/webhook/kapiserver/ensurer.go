@@ -85,7 +85,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 		caBundleSecret, err := getLatestIssuedCABundleSecret(ctx, e.client, new.Namespace)
 		if err != nil {
 			// if CA secret is still not created we do not want to return an error
-			if _, ok := err.(*NoCASecretError); ok {
+			if _, ok := err.(*noCASecretError); ok {
 				return nil
 			}
 			return err
@@ -179,13 +179,13 @@ func getLatestIssuedCABundleSecret(ctx context.Context, c client.Client, namespa
 // getLatestIssuedSecret returns the secret with the "issued-at-time" label that represents the latest point in time
 func getLatestIssuedSecret(secrets []corev1.Secret) (*corev1.Secret, error) {
 	if len(secrets) == 0 {
-		return nil, &NoCASecretError{}
+		return nil, &noCASecretError{}
 	}
 
 	newestSecret := &secrets[0]
 	initialIssuedAt, ok := secrets[0].Labels[secretsmanager.LabelKeyIssuedAtTime]
 	if !ok {
-		return nil, &NoIssuedAtTimeError{secretName: secrets[0].Name, namespace: secrets[0].Namespace}
+		return nil, &noIssuedAtTimeError{secretName: secrets[0].Name, namespace: secrets[0].Namespace}
 	}
 
 	initialIssuedAtUnix, err := strconv.ParseInt(initialIssuedAt, 10, 64)
@@ -199,7 +199,7 @@ func getLatestIssuedSecret(secrets []corev1.Secret) (*corev1.Secret, error) {
 		// we have a problem since this is the source of truth
 		issuedAt, ok := secrets[i].Labels[secretsmanager.LabelKeyIssuedAtTime]
 		if !ok {
-			return nil, &NoIssuedAtTimeError{secretName: secrets[i].Name, namespace: secrets[i].Namespace}
+			return nil, &noIssuedAtTimeError{secretName: secrets[i].Name, namespace: secrets[i].Namespace}
 		}
 
 		issuedAtUnix, err := strconv.ParseInt(issuedAt, 10, 64)

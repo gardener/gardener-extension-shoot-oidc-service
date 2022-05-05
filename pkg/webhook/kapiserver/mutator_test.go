@@ -303,7 +303,10 @@ var _ = Describe("Mutator", func() {
 				Data: map[string][]byte{"bundle.crt": []byte("test")},
 			})).To(Succeed())
 
-			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).Error()
+			err := ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)
+			Expect(err).To(HaveOccurred())
+			_, ok := err.(*noIssuedAtTimeError)
+			Expect(ok).To(BeTrue())
 			checkDeploymentIsNotMutated(deployment)
 		})
 	})
