@@ -182,18 +182,8 @@ func getLatestIssuedSecret(secrets []corev1.Secret) (*corev1.Secret, error) {
 		return nil, &noCASecretError{}
 	}
 
-	newestSecret := &secrets[0]
-	initialIssuedAt, ok := secrets[0].Labels[secretsmanager.LabelKeyIssuedAtTime]
-	if !ok {
-		return nil, &noIssuedAtTimeError{secretName: secrets[0].Name, namespace: secrets[0].Namespace}
-	}
-
-	initialIssuedAtUnix, err := strconv.ParseInt(initialIssuedAt, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	currentIssuedAtTime := time.Unix(initialIssuedAtUnix, 0).UTC()
-
+	var newestSecret *corev1.Secret
+	var currentIssuedAtTime time.Time
 	for i := 0; i < len(secrets); i++ {
 		// if some of the secrets have no "issued-at-time" label
 		// we have a problem since this is the source of truth
@@ -208,8 +198,7 @@ func getLatestIssuedSecret(secrets []corev1.Secret) (*corev1.Secret, error) {
 		}
 
 		issuedAtTime := time.Unix(issuedAtUnix, 0).UTC()
-
-		if issuedAtTime.After(currentIssuedAtTime) {
+		if newestSecret == nil || issuedAtTime.After(currentIssuedAtTime) {
 			newestSecret = &secrets[i]
 			currentIssuedAtTime = issuedAtTime
 		}
