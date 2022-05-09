@@ -6,20 +6,26 @@ package kapiserver
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+
 	"github.com/gardener/gardener/extensions/pkg/controller"
+	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
-
+	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -44,6 +50,10 @@ func (e *ensurer) InjectClient(client client.Client) error {
 	return nil
 }
 
+// NewSecretsManager is an alias for extensionssecretsmanager.SecretsManagerForCluster.
+// exposed for testing
+var NewSecretsManager = extensionssecretsmanager.SecretsManagerForCluster
+
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the oidc-webhook-authenticator requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, new, _ *appsv1.Deployment) error {
 	template := &new.Spec.Template
@@ -54,29 +64,34 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return nil
 		}
 
-		namespacedName := types.NamespacedName{
-			Namespace: new.Namespace,
-			Name:      constants.WebhookKubeConfigSecretName,
-		}
-		secret := &corev1.Secret{}
-
-		if err := e.client.Get(ctx, namespacedName, secret); err != nil {
+		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookKubeConfigSecretName, Namespace: new.Namespace}}
+		if err := e.client.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil
-			} else {
-				return err
 			}
+			return err
 		}
 
 		cluster, err := controller.GetCluster(ctx, e.client, new.Namespace)
 		if err != nil {
 			return err
 		}
+
 		if controller.IsHibernated(cluster) {
 			return nil
 		}
 
-		ensureKubeAPIServerIsMutated(ps, c)
+		// we expect that the CA bundle secret is handled by the lifecycle controller
+		caBundleSecret, err := getLatestIssuedCABundleSecret(ctx, e.client, new.Namespace)
+		if err != nil {
+			// if CA secret is still not created we do not want to return an error
+			if _, ok := err.(*noCASecretError); ok {
+				return nil
+			}
+			return err
+		}
+
+		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)
 	}
 
 	return nil
@@ -91,20 +106,20 @@ func NewEnsurer(logger logr.Logger) genericmutator.Ensurer {
 
 // ensureKubeAPIServerIsMutated ensures that the kube-apiserver deployment is mutated accordingly
 // so that it is able to communicate with the oidc-webhook-authenticator
-func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container) {
-	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookConfigPrefix, "/var/run/secrets/oidc-webhook/authenticator/kubeconfig")
+func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container, caBundleSecretName string) {
+	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookConfigPrefix, constants.AuthenticatorDir+"/kubeconfig")
 	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookCacheTTLPrefix, "0")
 
 	c.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(c.VolumeMounts, corev1.VolumeMount{
 		Name:      oidcAuthenticatorKubeConfigVolumeName,
 		ReadOnly:  true,
-		MountPath: "/var/run/secrets/oidc-webhook/authenticator",
+		MountPath: constants.AuthenticatorDir,
 	})
 
 	c.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(c.VolumeMounts, corev1.VolumeMount{
 		Name:      tokenValidatorSecretVolumeName,
 		ReadOnly:  true,
-		MountPath: "/var/run/secrets/oidc-webhook/token-validator",
+		MountPath: constants.TokenValidatorDir,
 	})
 
 	ps.Volumes = extensionswebhook.EnsureVolumeWithName(ps.Volumes, corev1.Volume{
@@ -125,10 +140,10 @@ func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container) {
 					{
 						Secret: &corev1.SecretProjection{
 							Items: []corev1.KeyToPath{
-								{Key: "ca.crt", Path: "ca.crt"},
+								{Key: secretutils.DataKeyCertificateBundle, Path: secretutils.DataKeyCertificateBundle},
 							},
 							LocalObjectReference: corev1.LocalObjectReference{
-								Name: v1beta1constants.SecretNameCACluster,
+								Name: caBundleSecretName,
 							},
 						},
 					},
@@ -146,4 +161,48 @@ func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container) {
 			},
 		},
 	})
+}
+
+// getLatestIssuedCABundleSecret returns the oidc-webhook latest CA bundle secret
+func getLatestIssuedCABundleSecret(ctx context.Context, c client.Client, namespace string) (*corev1.Secret, error) {
+	secretList := &corev1.SecretList{}
+	if err := c.List(ctx, secretList, client.InNamespace(namespace), client.MatchingLabels{
+		secretsmanager.LabelKeyBundleFor:       secrets.CAName,
+		secretsmanager.LabelKeyManagedBy:       secretsmanager.LabelValueSecretsManager,
+		secretsmanager.LabelKeyManagerIdentity: secrets.ManagerIdentity,
+	}); err != nil {
+		return nil, err
+	}
+	return getLatestIssuedSecret(secretList.Items)
+}
+
+// getLatestIssuedSecret returns the secret with the "issued-at-time" label that represents the latest point in time
+func getLatestIssuedSecret(secrets []corev1.Secret) (*corev1.Secret, error) {
+	if len(secrets) == 0 {
+		return nil, &noCASecretError{}
+	}
+
+	var newestSecret *corev1.Secret
+	var currentIssuedAtTime time.Time
+	for i := 0; i < len(secrets); i++ {
+		// if some of the secrets have no "issued-at-time" label
+		// we have a problem since this is the source of truth
+		issuedAt, ok := secrets[i].Labels[secretsmanager.LabelKeyIssuedAtTime]
+		if !ok {
+			return nil, &noIssuedAtTimeError{secretName: secrets[i].Name, namespace: secrets[i].Namespace}
+		}
+
+		issuedAtUnix, err := strconv.ParseInt(issuedAt, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		issuedAtTime := time.Unix(issuedAtUnix, 0).UTC()
+		if newestSecret == nil || issuedAtTime.After(currentIssuedAtTime) {
+			newestSecret = &secrets[i]
+			currentIssuedAtTime = issuedAtTime
+		}
+	}
+
+	return newestSecret, nil
 }

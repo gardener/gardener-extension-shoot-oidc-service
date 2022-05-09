@@ -106,7 +106,7 @@ format:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg ./test
 
 .PHONY: test
-test:
+test: $(REPORT_COLLECTOR)
 	@SKIP_FETCH_TOOLS=1 $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test.sh ./cmd/... ./pkg/...
 
 .PHONY: test-cov
