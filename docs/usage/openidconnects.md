@@ -62,6 +62,11 @@ spec:
   # supportedSigningAlgs:
   # - RS256
 
+  # maxTokenExpirationSeconds if specified, sets a limit in seconds to the maximum validity duration of a token.
+  # Tokens issued with validity greater that this value will not be verified.
+  # Setting this will require that the tokens have the "iat" and "exp" claims.
+  # maxTokenExpirationSeconds: 3600
+
   # jwks if specified, provides an option to specify JWKS keys offline.
   # jwks:
   #   keys is a base64 encoded JSON webkey Set. If specified, the OIDCAuthenticator skips the request to the issuer's jwks_uri endpoint to retrieve the keys.
