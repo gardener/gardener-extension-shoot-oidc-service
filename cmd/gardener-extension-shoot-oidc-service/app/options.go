@@ -8,6 +8,7 @@ import (
 	"os"
 
 	oidccmd "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/cmd"
+
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 )
@@ -38,7 +39,13 @@ func NewOptions() *Options {
 	}
 
 	webhookSwitches := oidccmd.WebhookSwitchOptions()
-	webhookOptions := webhookcmd.NewAddToManagerOptions(ExtensionName, webhookServerOptions, webhookSwitches)
+	webhookOptions := webhookcmd.NewAddToManagerOptions(
+		ExtensionName,
+		"",
+		nil,
+		webhookServerOptions,
+		webhookSwitches,
+	)
 
 	options := &Options{
 		generalOptions: &controllercmd.GeneralOptions{},

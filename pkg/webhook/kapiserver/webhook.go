@@ -10,7 +10,6 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/operation/botanist/component/extensions/operatingsystemconfig/original/components/kubelet"
 	oscutils "github.com/gardener/gardener/pkg/operation/botanist/component/extensions/operatingsystemconfig/utils"
-
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -49,7 +48,6 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 
 	webhook := &extensionswebhook.Webhook{
 		Name:     "oidc",
-		Kind:     "oidc",
 		Provider: "",
 		Types:    types,
 		Target:   extensionswebhook.TargetSeed,
