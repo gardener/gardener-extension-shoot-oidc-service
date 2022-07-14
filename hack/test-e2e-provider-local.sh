@@ -17,7 +17,7 @@ fi
 cd "$repo_root/gardener"
 git checkout d829ed0913c02222f3a3ee7cdca2220fccb62ecb
 make kind-up
-export KUBECONFIG=$repo_root/gardener/example/provider-local/base/kubeconfig
+export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/kubeconfig
 make gardener-up
 
 cd $repo_root

@@ -55,6 +55,8 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			Namespace:    projectNamespace,
 			Annotations: map[string]string{
 				v1beta1constants.AnnotationShootInfrastructureCleanupWaitPeriodSeconds: "0",
+				// replace this with its constant value when g/g is revendored
+				"shoot.gardener.cloud/cloud-config-execution-max-delay-seconds": "0",
 			},
 		},
 		Spec: gardencorev1beta1.ShootSpec{
@@ -63,7 +65,8 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			CloudProfileName:  "local",
 			SeedName:          pointer.String("local"),
 			Kubernetes: gardencorev1beta1.Kubernetes{
-				Version: "1.23.1",
+				Version:                     "1.24.0",
+				EnableStaticTokenKubeconfig: pointer.Bool(true),
 			},
 			Networking: gardencorev1beta1.Networking{
 				Type:           "calico",
