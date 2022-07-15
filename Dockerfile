@@ -11,6 +11,7 @@ RUN make install
 
 ############# gardener-extension-shoot-oidc-service
 FROM gcr.io/distroless/static-debian11:nonroot AS gardener-extension-shoot-oidc-service
+WORKDIR /
 
 COPY --from=builder /go/bin/gardener-extension-shoot-oidc-service /gardener-extension-shoot-oidc-service
 ENTRYPOINT ["/gardener-extension-shoot-oidc-service"]
