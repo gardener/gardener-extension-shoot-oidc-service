@@ -19,6 +19,7 @@ import (
 
 var logger = log.Log.WithName("oidc-kapiserver-webhook")
 
+// New creates new webhook
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Adding webhook to manager")
 

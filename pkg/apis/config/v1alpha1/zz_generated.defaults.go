@@ -22,5 +22,5 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_Configuration(in *Configuration) {
-	SetDefaults_Configuration(in)
+	SetDefaultsConfiguration(in)
 }
