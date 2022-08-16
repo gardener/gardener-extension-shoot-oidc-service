@@ -25,9 +25,15 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
-      {{- if .Values.imageVectorOverwrite }}
+      {{- if or .Values.imageVectorOverwrite .Values.metrics.enableScraping }}
       annotations:
+      {{- end }}
+      {{- if .Values.imageVectorOverwrite }}
         checksum/configmap-extension-imagevector-overwrite: {{ include (print $.Template.BasePath "/configmap-imagevector-overwrite.yaml") . | sha256sum }}
+      {{- end }}
+      {{- if .Values.metrics.enableScraping }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.metrics.port }}"
       {{- end }}
       labels:
         app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
@@ -66,10 +72,24 @@ spec:
         - --webhook-config-server-port={{ .Values.webhookConfig.serverPort }}
         - --webhook-config-namespace={{ .Release.Namespace }}
         - --gardener-version={{ .Values.gardener.version }}
+        - --metrics-bind-address=:{{ .Values.metrics.port }}
+        - --health-bind-address=:{{ .Values.healthPort }}
         ports:
         - name: webhook-server
           containerPort: {{ .Values.webhookConfig.serverPort }}
           protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.healthPort }}
+            scheme: HTTP
+          initialDelaySeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: {{ .Values.healthPort }}
+            scheme: HTTP
+          initialDelaySeconds: 5
         env:
         - name: LEADER_ELECTION_NAMESPACE
           valueFrom:
