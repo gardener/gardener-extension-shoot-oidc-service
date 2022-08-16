@@ -27,6 +27,8 @@ endif
 TOOLS_DIR := $(REPO_ROOT)/hack/tools
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
+GOLANGCI_LINT_VERSION := v1.48.0
+
 .PHONY: start
 start:
 	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
@@ -85,8 +87,8 @@ check-docforge: $(DOCFORGE)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-docforge.sh $(REPO_ROOT) $(REPO_ROOT)/.docforge/manifest.yaml ".docforge/;docs/" "gardener-extension-shoot-oidc-service" false
 
 .PHONY: check
-check: $(GOIMPORTS) $(HELM)
-	go vet ./...
+check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
+	@ $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
 .PHONY: generate
