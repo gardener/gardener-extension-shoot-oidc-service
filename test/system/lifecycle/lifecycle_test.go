@@ -179,7 +179,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 				}
 			}, time.Second*20, time.Second).Should(Equal(expectedStatus))
 		} else {
-			f.Logger.Warning(fmt.Sprintf("Cannot register the seed as identity provider. Error: %s. The verification of oidc provider registration was skipped. Continuing with test execution...", err.Error()))
+			f.Logger.Info(fmt.Sprintf("Cannot register the seed as identity provider. Error: %s. The verification of oidc provider registration was skipped. Continuing with test execution...", err.Error()))
 		}
 
 		// Ensure that the OIDC service is disabled in order to verify the deletion process

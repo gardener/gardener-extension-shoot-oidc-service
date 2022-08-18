@@ -47,7 +47,6 @@ import (
 	"k8s.io/utils/clock"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -61,7 +60,6 @@ var crdContent []byte
 // NewActuator returns an actuator responsible for Extension resources.
 func NewActuator(config config.Configuration) extension.Actuator {
 	return &actuator{
-		logger:        log.Log.WithName(ActuatorName),
 		serviceConfig: config,
 	}
 }
@@ -71,7 +69,6 @@ type actuator struct {
 	config        *rest.Config
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
-	logger        logr.Logger
 }
 
 func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hibernated bool) (*int32, error) {
@@ -109,7 +106,7 @@ func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hib
 }
 
 // Reconcile the Extension resource.
-func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	namespace := ex.GetNamespace()
 
 	cluster, err := controller.GetCluster(ctx, a.client, namespace)
@@ -136,7 +133,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 	// initialize SecretsManager based on Cluster object
 	configs := secrets.ConfigsFor(namespace)
 
-	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, configs)
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, log.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, configs)
 	if err != nil {
 		return err
 	}
@@ -209,7 +206,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 }
 
 // Delete the Extension resource.
-func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Delete(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	namespace := ex.GetNamespace()
 	twoMinutes := 2 * time.Minute
 
@@ -251,7 +248,7 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 		return err
 	}
 
-	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, a.logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, nil)
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, log.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, nil)
 	if err != nil {
 		return err
 	}
@@ -269,18 +266,18 @@ func (a *actuator) deleteSecret(ctx context.Context, name, namespace string) err
 }
 
 // Restore the Extension resource.
-func (a *actuator) Restore(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
-	return a.Reconcile(ctx, ex)
+func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	return a.Reconcile(ctx, log, ex)
 }
 
 // Migrate the Extension resource.
-func (a *actuator) Migrate(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	// Keep objects for shoot managed resources so that they are not deleted from the shoot during the migration
 	if err := managedresources.SetKeepObjects(ctx, a.client, ex.GetNamespace(), constants.ManagedResourceNamesShoot, true); err != nil {
 		return err
 	}
 
-	return a.Delete(ctx, ex)
+	return a.Delete(ctx, log, ex)
 }
 
 // InjectConfig injects the rest config to this actuator.
