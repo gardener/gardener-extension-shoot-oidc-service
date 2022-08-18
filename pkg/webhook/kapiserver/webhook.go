@@ -19,6 +19,7 @@ import (
 
 var logger = log.Log.WithName("oidc-kapiserver-webhook")
 
+// New returns a new mutating webhook that ensures that the kube-apiserver deployment conforms to the oidc-webhook-authenticator requirements.
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Adding webhook to manager")
 

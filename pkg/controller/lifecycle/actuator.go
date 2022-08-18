@@ -406,7 +406,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							fmt.Sprintf("--tls-cert-file=%s/tls.crt", constants.WebhookTLSCertDir),
 							fmt.Sprintf("--tls-private-key-file=%s/tls.key", constants.WebhookTLSCertDir),
 							"--authorization-always-allow-paths=\"/webhooks/validating\"",
-							//fmt.Sprintf("--api-audiences=oidc-webhook-authenticator-%s", namespace),
+							// fmt.Sprintf("--api-audiences=oidc-webhook-authenticator-%s", namespace),
 							"--v=2",
 						},
 						LivenessProbe: &corev1.Probe{
@@ -582,7 +582,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName, tokenValidatorServiceAccountName string) (map[string][]byte, error) {
 	failPolicy := admissionregistration.Fail
 	sideEffectClass := admissionregistration.SideEffectClassNone
-	validatingWebhookUrl := fmt.Sprintf("https://%s.%s/webhooks/validating", constants.ApplicationName, namespace)
+	validatingWebhookURL := fmt.Sprintf("https://%s.%s/webhooks/validating", constants.ApplicationName, namespace)
 
 	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 	shootResources, err := shootRegistry.AddAllAndSerialize(
@@ -702,7 +702,7 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 				SideEffects:             &sideEffectClass,
 				AdmissionReviewVersions: []string{"v1", "v1beta"},
 				ClientConfig: admissionregistration.WebhookClientConfig{
-					URL:      &validatingWebhookUrl,
+					URL:      &validatingWebhookURL,
 					CABundle: webhookCaBundle,
 				},
 			}},

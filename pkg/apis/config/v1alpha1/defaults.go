@@ -11,8 +11,3 @@ import (
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
-
-// SetDefaults_Configuration sets default values for Configuration objects.
-func SetDefaults_Configuration(obj *Configuration) {
-
-}

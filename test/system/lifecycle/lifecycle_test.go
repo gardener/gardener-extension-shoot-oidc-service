@@ -60,10 +60,11 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 	AfterEach(func() {
 		// Revert to initial extension configuration
-		f.UpdateShoot(context.Background(), func(shoot *gardencorev1beta1.Shoot) error {
+		err := f.UpdateShoot(context.Background(), func(shoot *gardencorev1beta1.Shoot) error {
 			shoot.Spec.Extensions = initialExtensionConfig
 			return nil
 		})
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	f.Serial().Beta().CIt("Should perform the common case scenario without any errors", func(ctx context.Context) {
@@ -92,7 +93,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 			jwks, err := getJWKS(ctx, f.SeedClient.RESTClient(), jwksURL.Path)
 			Expect(err).ToNot(HaveOccurred())
-			clientId := "some-custom-client-id"
+			clientID := "some-custom-client-id"
 			oidcAPIVersion := "authentication.gardener.cloud/v1alpha1"
 			oidcKind := "OpenIDConnect"
 
@@ -106,7 +107,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 				},
 				"spec": map[string]interface{}{
 					"issuerURL":      oidConfig.Issuer,
-					"clientID":       clientId,
+					"clientID":       clientID,
 					"usernameClaim":  "sub",
 					"usernamePrefix": "custom-prefix:",
 					"jwks": map[string]interface{}{
@@ -126,14 +127,14 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 			// Conversion should be safe
 			spec := oidc.Object["spec"].(map[string]interface{})
-			Expect(spec["clientID"]).To(Equal(clientId))
+			Expect(spec["clientID"]).To(Equal(clientID))
 			Expect(spec["issuerURL"]).To(Equal(oidConfig.Issuer))
 
 			// Get token from seed
 			var ttl int64 = 1800
 			tokenReq, err := f.SeedClient.Kubernetes().CoreV1().ServiceAccounts("default").CreateToken(ctx, "default", &authenticationv1.TokenRequest{
 				Spec: authenticationv1.TokenRequestSpec{
-					Audiences:         []string{clientId},
+					Audiences:         []string{clientID},
 					ExpirationSeconds: &ttl,
 				},
 			}, metav1.CreateOptions{})
@@ -183,7 +184,8 @@ var _ = Describe("Shoot oidc service testing", func() {
 		}
 
 		// Ensure that the OIDC service is disabled in order to verify the deletion process
-		f.UpdateShoot(ctx, ensureOIDCServiceIsDisabled)
+		err = f.UpdateShoot(ctx, ensureOIDCServiceIsDisabled)
+		Expect(err).ToNot(HaveOccurred())
 
 		// Ensure that oidc authenticator deployment is deleted
 		err = f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)
@@ -260,9 +262,9 @@ func getOIDConfig(ctx context.Context, client rest.Interface) (*oidConfig, error
 	return oidConfig, nil
 }
 
-func getJWKS(ctx context.Context, client rest.Interface, relativeUri string) ([]byte, error) {
+func getJWKS(ctx context.Context, client rest.Interface, relativeURI string) ([]byte, error) {
 	jwksReq := client.Get()
-	jwksReq.RequestURI(relativeUri)
+	jwksReq.RequestURI(relativeURI)
 	return jwksReq.DoRaw(ctx)
 }
 
@@ -278,7 +280,8 @@ func requestAPIServer(ctx context.Context, caBundle []byte, apiserverURL, bearer
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				RootCAs: caCertPool,
+				RootCAs:    caCertPool,
+				MinVersion: tls.VersionTLS12,
 			},
 		},
 	}
@@ -288,7 +291,6 @@ func requestAPIServer(ctx context.Context, caBundle []byte, apiserverURL, bearer
 		return nil, err
 	}
 
-	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -296,6 +298,11 @@ func requestAPIServer(ctx context.Context, caBundle []byte, apiserverURL, bearer
 
 	status := &metav1.Status{}
 	err = json.Unmarshal(body, status)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
