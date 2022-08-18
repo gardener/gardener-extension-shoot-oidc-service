@@ -20,3 +20,4 @@ issues:
   # - var-naming # ((var|const|struct field|func) .* should be .*
   - dot-imports # should not use dot imports
   - "exported: (type|func) name will be used as .* by other packages, and that stutters;"
+  - indent-error-flow # if block ends with a return statement, so drop this else and outdent its block
