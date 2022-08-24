@@ -43,3 +43,10 @@ vpa:
 
 gardener:
   version: ""
+
+healthPort: 8081
+
+# settings for metrics, e.g. scraping by seed-prometheus
+metrics:
+  port: 8080
+  enableScraping: true

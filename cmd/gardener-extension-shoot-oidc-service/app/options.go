@@ -58,6 +58,8 @@ func NewOptions() *Options {
 			LeaderElectionNamespace: os.Getenv("LEADER_ELECTION_NAMESPACE"),
 			WebhookServerPort:       443,
 			WebhookCertDir:          "/tmp/gardener-extensions-cert",
+			MetricsBindAddress:      ":8080",
+			HealthBindAddress:       ":8081",
 		},
 		controllerOptions: &controllercmd.ControllerOptions{
 			// This is a default value.
