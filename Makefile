@@ -86,6 +86,10 @@ check-generate:
 check-docforge: $(DOCFORGE)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-docforge.sh $(REPO_ROOT) $(REPO_ROOT)/.docforge/manifest.yaml ".docforge/;docs/" "gardener-extension-shoot-oidc-service" false
 
+.PHONY: check-docforge-debug
+check-docforge-debug: $(DOCFORGE)
+	@$(REPO_ROOT)/hack/check-docforge-debug.sh $(REPO_ROOT) $(REPO_ROOT)/.docforge/manifest.yaml ".docforge/;docs/" "gardener-extension-shoot-oidc-service" false
+
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
@@ -116,7 +120,7 @@ test-clean:
 verify: check check-docforge format test
 
 .PHONY: verify-extended
-verify-extended: check-generate check check-docforge format test test-cov test-clean
+verify-extended: check-generate check check-docforge-debug format test test-cov test-clean
 
 .PHONY: test-e2e-local
 test-e2e-local: $(KIND) $(YQ) $(GINKGO)
