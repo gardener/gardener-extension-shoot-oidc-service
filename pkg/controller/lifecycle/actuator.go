@@ -310,7 +310,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		port10443        = intstr.FromInt(10443)
 		registry         = managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer)
 		requestCPU, _    = resource.ParseQuantity("50m")
-		limitCPU, _      = resource.ParseQuantity("200m")
+		limitCPU, _      = resource.ParseQuantity("1")
 		requestMemory, _ = resource.ParseQuantity("64Mi")
 		limitMemory, _   = resource.ParseQuantity("256Mi")
 	)
