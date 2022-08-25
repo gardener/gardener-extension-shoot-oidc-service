@@ -27,9 +27,11 @@ import (
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
+	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -155,6 +157,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
+		*cluster.Seed.Status.KubernetesVersion,
 	)
 	if err != nil {
 		return err
@@ -304,7 +307,7 @@ func getLabels() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, seedKubernetesVersion string) (map[string][]byte, error) {
 	var (
 		tcpProto         = corev1.ProtocolTCP
 		port10443        = intstr.FromInt(10443)
@@ -472,33 +475,71 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	if oidcReplicas != nil && *oidcReplicas > 0 {
-		err = registry.Add(&autoscalingv2beta1.HorizontalPodAutoscaler{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName,
-				Namespace: namespace,
-			},
-			Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
-				ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
-					APIVersion: appsv1.SchemeGroupVersion.String(),
-					Kind:       "Deployment",
-					Name:       constants.ApplicationName,
+		var k8sVersionGreaterOrEqualThan123 bool
+		if k8sVersionGreaterOrEqualThan123, err = versionutils.CompareVersions(seedKubernetesVersion, ">=", "1.23"); err != nil {
+			return nil, err
+		}
+		if k8sVersionGreaterOrEqualThan123 {
+			err = registry.Add(&autoscalingv2.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      constants.ApplicationName,
+					Namespace: namespace,
 				},
-				MinReplicas: pointer.Int32(1),
-				MaxReplicas: 3,
-				Metrics: []autoscalingv2beta1.MetricSpec{
-					{
-						Type: autoscalingv2beta1.ResourceMetricSourceType,
-						Resource: &autoscalingv2beta1.ResourceMetricSource{
-							Name:                     corev1.ResourceCPU,
-							TargetAverageUtilization: pointer.Int32(80),
+				Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+					ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
+						APIVersion: appsv1.SchemeGroupVersion.String(),
+						Kind:       "Deployment",
+						Name:       constants.ApplicationName,
+					},
+					MinReplicas: pointer.Int32(1),
+					MaxReplicas: 3,
+					Metrics: []autoscalingv2.MetricSpec{
+						{
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type:               autoscalingv2.MetricTargetType("Utilization"),
+									AverageUtilization: pointer.Int32(80),
+								},
+							},
 						},
 					},
 				},
-			},
-		})
+			})
 
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = registry.Add(&autoscalingv2beta1.HorizontalPodAutoscaler{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      constants.ApplicationName,
+					Namespace: namespace,
+				},
+				Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
+					ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
+						APIVersion: appsv1.SchemeGroupVersion.String(),
+						Kind:       "Deployment",
+						Name:       constants.ApplicationName,
+					},
+					MinReplicas: pointer.Int32(1),
+					MaxReplicas: 3,
+					Metrics: []autoscalingv2beta1.MetricSpec{
+						{
+							Type: autoscalingv2beta1.ResourceMetricSourceType,
+							Resource: &autoscalingv2beta1.ResourceMetricSource{
+								Name:                     corev1.ResourceCPU,
+								TargetAverageUtilization: pointer.Int32(80),
+							},
+						},
+					},
+				},
+			})
+
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
