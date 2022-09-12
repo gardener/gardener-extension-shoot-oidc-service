@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
@@ -20,7 +21,7 @@ import (
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/client/kubernetes"
+	gardenerkubernetes "github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
@@ -29,6 +30,7 @@ import (
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
+
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -43,6 +45,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	kubernetes "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -68,7 +71,7 @@ func NewActuator(config config.Configuration) extension.Actuator {
 
 type actuator struct {
 	client        client.Client
-	config        *rest.Config
+	clientset     kubernetes.Interface
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
 }
@@ -150,6 +153,15 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("secret %q not found", secrets.CAName)
 	}
 
+	k8sVersionInfo, err := a.clientset.Discovery().ServerVersion()
+	if err != nil {
+		return err
+	}
+	k8sVersion, err := semver.NewVersion(k8sVersionInfo.GitVersion)
+	if err != nil {
+		return err
+	}
+
 	seedResources, err := getSeedResources(
 		oidcReplicas,
 		hibernated,
@@ -157,7 +169,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
-		*cluster.Seed.Status.KubernetesVersion,
+		k8sVersion,
 	)
 	if err != nil {
 		return err
@@ -285,7 +297,13 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 
 // InjectConfig injects the rest config to this actuator.
 func (a *actuator) InjectConfig(config *rest.Config) error {
-	a.config = config
+	var err error
+
+	a.clientset, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("could not create Kubernetes client: %w", err)
+	}
+
 	return nil
 }
 
@@ -307,11 +325,11 @@ func getLabels() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, seedKubernetesVersion string) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
 		tcpProto         = corev1.ProtocolTCP
 		port10443        = intstr.FromInt(10443)
-		registry         = managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer)
+		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
 		requestCPU, _    = resource.ParseQuantity("50m")
 		limitCPU, _      = resource.ParseQuantity("1")
 		requestMemory, _ = resource.ParseQuantity("64Mi")
@@ -475,71 +493,10 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	if oidcReplicas != nil && *oidcReplicas > 0 {
-		var k8sVersionGreaterOrEqualThan123 bool
-		if k8sVersionGreaterOrEqualThan123, err = versionutils.CompareVersions(seedKubernetesVersion, ">=", "1.23"); err != nil {
+		err = registry.Add(buildHPA(namespace, k8sVersion))
+
+		if err != nil {
 			return nil, err
-		}
-		if k8sVersionGreaterOrEqualThan123 {
-			err = registry.Add(&autoscalingv2.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      constants.ApplicationName,
-					Namespace: namespace,
-				},
-				Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-					ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
-						APIVersion: appsv1.SchemeGroupVersion.String(),
-						Kind:       "Deployment",
-						Name:       constants.ApplicationName,
-					},
-					MinReplicas: pointer.Int32(1),
-					MaxReplicas: 3,
-					Metrics: []autoscalingv2.MetricSpec{
-						{
-							Type: autoscalingv2.ResourceMetricSourceType,
-							Resource: &autoscalingv2.ResourceMetricSource{
-								Name: corev1.ResourceCPU,
-								Target: autoscalingv2.MetricTarget{
-									Type:               autoscalingv2.MetricTargetType("Utilization"),
-									AverageUtilization: pointer.Int32(80),
-								},
-							},
-						},
-					},
-				},
-			})
-
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			err = registry.Add(&autoscalingv2beta1.HorizontalPodAutoscaler{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      constants.ApplicationName,
-					Namespace: namespace,
-				},
-				Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
-					ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
-						APIVersion: appsv1.SchemeGroupVersion.String(),
-						Kind:       "Deployment",
-						Name:       constants.ApplicationName,
-					},
-					MinReplicas: pointer.Int32(1),
-					MaxReplicas: 3,
-					Metrics: []autoscalingv2beta1.MetricSpec{
-						{
-							Type: autoscalingv2beta1.ResourceMetricSourceType,
-							Resource: &autoscalingv2beta1.ResourceMetricSource{
-								Name:                     corev1.ResourceCPU,
-								TargetAverageUtilization: pointer.Int32(80),
-							},
-						},
-					},
-				},
-			})
-
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 
@@ -617,12 +574,68 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	return resources, nil
 }
 
+func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
+	if versionutils.ConstraintK8sGreaterEqual123.Check(k8sVersion) {
+		return &autoscalingv2.HorizontalPodAutoscaler{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ApplicationName,
+				Namespace: namespace,
+			},
+			Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+				ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
+					APIVersion: appsv1.SchemeGroupVersion.String(),
+					Kind:       "Deployment",
+					Name:       constants.ApplicationName,
+				},
+				MinReplicas: pointer.Int32(1),
+				MaxReplicas: 3,
+				Metrics: []autoscalingv2.MetricSpec{
+					{
+						Type: autoscalingv2.ResourceMetricSourceType,
+						Resource: &autoscalingv2.ResourceMetricSource{
+							Name: corev1.ResourceCPU,
+							Target: autoscalingv2.MetricTarget{
+								Type:               autoscalingv2.MetricTargetType("Utilization"),
+								AverageUtilization: pointer.Int32(80),
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+	return &autoscalingv2beta1.HorizontalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+		},
+		Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
+				APIVersion: appsv1.SchemeGroupVersion.String(),
+				Kind:       "Deployment",
+				Name:       constants.ApplicationName,
+			},
+			MinReplicas: pointer.Int32(1),
+			MaxReplicas: 3,
+			Metrics: []autoscalingv2beta1.MetricSpec{
+				{
+					Type: autoscalingv2beta1.ResourceMetricSourceType,
+					Resource: &autoscalingv2beta1.ResourceMetricSource{
+						Name:                     corev1.ResourceCPU,
+						TargetAverageUtilization: pointer.Int32(80),
+					},
+				},
+			},
+		},
+	}
+}
+
 func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName, tokenValidatorServiceAccountName string) (map[string][]byte, error) {
 	failPolicy := admissionregistration.Fail
 	sideEffectClass := admissionregistration.SideEffectClassNone
 	validatingWebhookURL := fmt.Sprintf("https://%s.%s/webhooks/validating", constants.ApplicationName, namespace)
 
-	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
+	shootRegistry := managedresources.NewRegistry(gardenerkubernetes.ShootScheme, gardenerkubernetes.ShootCodec, gardenerkubernetes.ShootSerializer)
 	shootResources, err := shootRegistry.AddAllAndSerialize(
 		&rbacv1.ClusterRole{
 			// TODO add more descriptive labels to resources
