@@ -327,13 +327,15 @@ func getLabels() map[string]string {
 
 func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
-		tcpProto         = corev1.ProtocolTCP
-		port10443        = intstr.FromInt(10443)
-		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
-		requestCPU, _    = resource.ParseQuantity("50m")
-		limitCPU, _      = resource.ParseQuantity("1")
-		requestMemory, _ = resource.ParseQuantity("64Mi")
-		limitMemory, _   = resource.ParseQuantity("256Mi")
+		tcpProto                       = corev1.ProtocolTCP
+		port10443                      = intstr.FromInt(10443)
+		registry                       = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
+		requestCPU, _                  = resource.ParseQuantity("50m")
+		limitCPU, _                    = resource.ParseQuantity("1")
+		requestMemory, _               = resource.ParseQuantity("64Mi")
+		limitMemory, _                 = resource.ParseQuantity("256Mi")
+		minReplicasHPA, maxReplicasHPA = int32(1), int32(3)
+		targetAverageUtilization       = int32(80)
 	)
 
 	kubeConfig := &configv1.Config{
@@ -493,7 +495,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	if oidcReplicas != nil && *oidcReplicas > 0 {
-		err = registry.Add(buildHPA(namespace, k8sVersion, 1, 3, 80))
+		err = registry.Add(buildHPA(namespace, k8sVersion, minReplicasHPA, maxReplicasHPA, targetAverageUtilization))
 
 		if err != nil {
 			return nil, err
