@@ -493,7 +493,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	if oidcReplicas != nil && *oidcReplicas > 0 {
-		err = registry.Add(buildHPA(namespace, k8sVersion))
+		err = registry.Add(buildHPA(namespace, k8sVersion, 1, 3, 80))
 
 		if err != nil {
 			return nil, err
@@ -574,7 +574,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	return resources, nil
 }
 
-func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
+func buildHPA(namespace string, k8sVersion *semver.Version, minReplicas, maxReplicas, targetAverageUtilization int32) client.Object {
 	if versionutils.ConstraintK8sGreaterEqual123.Check(k8sVersion) {
 		return &autoscalingv2.HorizontalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
@@ -587,8 +587,8 @@ func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
 					Kind:       "Deployment",
 					Name:       constants.ApplicationName,
 				},
-				MinReplicas: pointer.Int32(1),
-				MaxReplicas: 3,
+				MinReplicas: pointer.Int32(minReplicas),
+				MaxReplicas: maxReplicas,
 				Metrics: []autoscalingv2.MetricSpec{
 					{
 						Type: autoscalingv2.ResourceMetricSourceType,
@@ -596,7 +596,7 @@ func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
 							Name: corev1.ResourceCPU,
 							Target: autoscalingv2.MetricTarget{
 								Type:               autoscalingv2.MetricTargetType("Utilization"),
-								AverageUtilization: pointer.Int32(80),
+								AverageUtilization: pointer.Int32(targetAverageUtilization),
 							},
 						},
 					},
@@ -615,14 +615,14 @@ func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
 				Kind:       "Deployment",
 				Name:       constants.ApplicationName,
 			},
-			MinReplicas: pointer.Int32(1),
-			MaxReplicas: 3,
+			MinReplicas: pointer.Int32(minReplicas),
+			MaxReplicas: maxReplicas,
 			Metrics: []autoscalingv2beta1.MetricSpec{
 				{
 					Type: autoscalingv2beta1.ResourceMetricSourceType,
 					Resource: &autoscalingv2beta1.ResourceMetricSource{
 						Name:                     corev1.ResourceCPU,
-						TargetAverageUtilization: pointer.Int32(80),
+						TargetAverageUtilization: pointer.Int32(targetAverageUtilization),
 					},
 				},
 			},
