@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Masterminds/semver"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
@@ -29,8 +28,9 @@ import (
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	versionutils "github.com/gardener/gardener/pkg/utils/version"
-	"github.com/go-logr/logr"
 
+	"github.com/Masterminds/semver"
+	"github.com/go-logr/logr"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -157,6 +157,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 	if err != nil {
 		return err
 	}
+
 	k8sVersion, err := semver.NewVersion(k8sVersionInfo.GitVersion)
 	if err != nil {
 		return err
@@ -327,15 +328,13 @@ func getLabels() map[string]string {
 
 func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
-		tcpProto                       = corev1.ProtocolTCP
-		port10443                      = intstr.FromInt(10443)
-		registry                       = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
-		requestCPU, _                  = resource.ParseQuantity("50m")
-		limitCPU, _                    = resource.ParseQuantity("1")
-		requestMemory, _               = resource.ParseQuantity("64Mi")
-		limitMemory, _                 = resource.ParseQuantity("256Mi")
-		minReplicasHPA, maxReplicasHPA = int32(1), int32(3)
-		targetAverageUtilization       = int32(80)
+		tcpProto         = corev1.ProtocolTCP
+		port10443        = intstr.FromInt(10443)
+		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
+		requestCPU, _    = resource.ParseQuantity("50m")
+		limitCPU, _      = resource.ParseQuantity("1")
+		requestMemory, _ = resource.ParseQuantity("64Mi")
+		limitMemory, _   = resource.ParseQuantity("256Mi")
 	)
 
 	kubeConfig := &configv1.Config{
@@ -495,7 +494,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	if oidcReplicas != nil && *oidcReplicas > 0 {
-		err = registry.Add(buildHPA(namespace, k8sVersion, minReplicasHPA, maxReplicasHPA, targetAverageUtilization))
+		err = registry.Add(buildHPA(namespace, k8sVersion))
 
 		if err != nil {
 			return nil, err
@@ -576,7 +575,12 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	return resources, nil
 }
 
-func buildHPA(namespace string, k8sVersion *semver.Version, minReplicas, maxReplicas, targetAverageUtilization int32) client.Object {
+func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
+	var (
+		minReplicas, maxReplicas int32 = 1, 3
+		targetAverageUtilization int32 = 80
+	)
+
 	if versionutils.ConstraintK8sGreaterEqual123.Check(k8sVersion) {
 		return &autoscalingv2.HorizontalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
@@ -589,7 +593,7 @@ func buildHPA(namespace string, k8sVersion *semver.Version, minReplicas, maxRepl
 					Kind:       "Deployment",
 					Name:       constants.ApplicationName,
 				},
-				MinReplicas: pointer.Int32(minReplicas),
+				MinReplicas: &minReplicas,
 				MaxReplicas: maxReplicas,
 				Metrics: []autoscalingv2.MetricSpec{
 					{
@@ -598,7 +602,7 @@ func buildHPA(namespace string, k8sVersion *semver.Version, minReplicas, maxRepl
 							Name: corev1.ResourceCPU,
 							Target: autoscalingv2.MetricTarget{
 								Type:               autoscalingv2.MetricTargetType("Utilization"),
-								AverageUtilization: pointer.Int32(targetAverageUtilization),
+								AverageUtilization: &targetAverageUtilization,
 							},
 						},
 					},
@@ -617,14 +621,14 @@ func buildHPA(namespace string, k8sVersion *semver.Version, minReplicas, maxRepl
 				Kind:       "Deployment",
 				Name:       constants.ApplicationName,
 			},
-			MinReplicas: pointer.Int32(minReplicas),
+			MinReplicas: &minReplicas,
 			MaxReplicas: maxReplicas,
 			Metrics: []autoscalingv2beta1.MetricSpec{
 				{
 					Type: autoscalingv2beta1.ResourceMetricSourceType,
 					Resource: &autoscalingv2beta1.ResourceMetricSource{
 						Name:                     corev1.ResourceCPU,
-						TargetAverageUtilization: pointer.Int32(targetAverageUtilization),
+						TargetAverageUtilization: &targetAverageUtilization,
 					},
 				},
 			},
