@@ -601,7 +601,7 @@ func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
 						Resource: &autoscalingv2.ResourceMetricSource{
 							Name: corev1.ResourceCPU,
 							Target: autoscalingv2.MetricTarget{
-								Type:               autoscalingv2.MetricTargetType("Utilization"),
+								Type:               autoscalingv2.UtilizationMetricType,
 								AverageUtilization: &targetAverageUtilization,
 							},
 						},
