@@ -414,7 +414,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 					},
 					AutomountServiceAccountToken: pointer.Bool(false),
 					ServiceAccountName:           constants.ApplicationName,
-					PriorityClassName:            "gardener-system-300",
+					PriorityClassName:            v1beta1constants.PriorityClassNameShootControlPlane300,
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
 						Image:           image.String(),
