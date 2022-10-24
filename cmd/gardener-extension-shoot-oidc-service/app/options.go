@@ -10,6 +10,7 @@ import (
 	oidccmd "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/cmd"
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
+	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 )
 
@@ -27,6 +28,7 @@ type Options struct {
 	healthOptions      *controllercmd.ControllerOptions
 	controllerSwitches *controllercmd.SwitchOptions
 	reconcileOptions   *controllercmd.ReconcilerOptions
+	heartbeatOptions   *heartbeatcmd.Options
 	webhookOptions     *webhookcmd.AddToManagerOptions
 	optionAggregator   controllercmd.OptionAggregator
 }
@@ -73,6 +75,12 @@ func NewOptions() *Options {
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
+		heartbeatOptions: &heartbeatcmd.Options{
+			ExtensionName: ExtensionName,
+			// This is a default value.
+			RenewIntervalSeconds: 30,
+			Namespace:            os.Getenv("LEADER_ELECTION_NAMESPACE"),
+		},
 		reconcileOptions:   &controllercmd.ReconcilerOptions{},
 		controllerSwitches: oidccmd.ControllerSwitches(),
 		webhookOptions:     webhookOptions,
@@ -86,6 +94,7 @@ func NewOptions() *Options {
 		options.controllerOptions,
 		controllercmd.PrefixOption("lifecycle-", options.lifecycleOptions),
 		controllercmd.PrefixOption("healthcheck-", options.healthOptions),
+		controllercmd.PrefixOption("heartbeat-", options.heartbeatOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
 		options.webhookOptions,
