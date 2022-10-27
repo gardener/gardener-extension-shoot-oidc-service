@@ -76,8 +76,8 @@ func NewOptions() *Options {
 			MaxConcurrentReconciles: 5,
 		},
 		heartbeatOptions: &heartbeatcmd.Options{
-			ExtensionName: ExtensionName,
 			// This is a default value.
+			ExtensionName:        ExtensionName,
 			RenewIntervalSeconds: 30,
 			Namespace:            os.Getenv("LEADER_ELECTION_NAMESPACE"),
 		},
