@@ -28,6 +28,8 @@ import (
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	versionutils "github.com/gardener/gardener/pkg/utils/version"
+	policyv1 "k8s.io/api/policy/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 
 	"github.com/Masterminds/semver"
 	"github.com/go-logr/logr"
@@ -367,6 +369,15 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		return nil, err
 	}
 
+	pdb, err := buildPDB(namespace, k8sVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate PodDisruptionBudget %v", err)
+	}
+
+	if err := registry.Add(pdb); err != nil {
+		return nil, err
+	}
+
 	image, err := imagevector.ImageVector().FindImage(constants.ImageName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find image version for %s: %v", constants.ImageName, err)
@@ -376,7 +387,10 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.ApplicationName,
 			Namespace: namespace,
-			Labels:    getLabels(),
+			Labels: utils.MergeStringMaps(getLabels(), map[string]string{
+				// TODO(timuthy): Use `HighAvailabilityConfigType` constant as soon as vendored to Gardener v1.60
+				"high-availability-config.resources.gardener.cloud/type": "server",
+			}),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas:             oidcReplicas,
@@ -574,6 +588,41 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	return resources, nil
+}
+
+func buildPDB(namespace string, k8sVersion *semver.Version) (client.Object, error) {
+	k8sVersionGreaterEqual121, err := versionutils.CompareVersions(k8sVersion.String(), ">=", "v1.21")
+	if err != nil {
+		return nil, err
+	}
+
+	objectMeta := metav1.ObjectMeta{
+		Name:      constants.ApplicationName,
+		Namespace: namespace,
+		Labels:    getLabels(),
+	}
+
+	pdbMaxUnavailable := intstr.FromInt(1)
+	pdbSelector := &metav1.LabelSelector{MatchLabels: getLabels()}
+
+	// TODO(timuthy): Drop the following code block as soon as v1.20 support for seed clusters has been discontinued.
+	if !k8sVersionGreaterEqual121 {
+		return &policyv1beta1.PodDisruptionBudget{
+			ObjectMeta: objectMeta,
+			Spec: policyv1beta1.PodDisruptionBudgetSpec{
+				MaxUnavailable: &pdbMaxUnavailable,
+				Selector:       pdbSelector,
+			},
+		}, nil
+	}
+
+	return &policyv1.PodDisruptionBudget{
+		ObjectMeta: objectMeta,
+		Spec: policyv1.PodDisruptionBudgetSpec{
+			MaxUnavailable: &pdbMaxUnavailable,
+			Selector:       pdbSelector,
+		},
+	}, nil
 }
 
 func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
