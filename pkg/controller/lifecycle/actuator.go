@@ -129,7 +129,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	hibernated := controller.IsHibernated(cluster)
+	hibernated := controller.IsHibernationEnabled(cluster)
 	oidcReplicas, err := getOIDCReplicas(ctx, a.client, namespace, hibernated)
 	if err != nil {
 		return err
