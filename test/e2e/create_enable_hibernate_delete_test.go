@@ -47,6 +47,11 @@ var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 		defer cancel()
 		Expect(f.HibernateShoot(ctx, f.Shoot)).To(Succeed())
 
+		depl, err = getOIDCDeployment(ctx, seedClient.Client(), shootSeedNamespace)
+		Expect(err).NotTo(HaveOccurred())
+		zero := int32(0)
+		Expect(*depl.Spec.Replicas).To(BeNumerically("==", zero))
+
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
