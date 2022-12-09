@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 	f := defaultShootCreationFramework()
-	f.Shoot = defaultShoot("default-")
+	f.Shoot = defaultShoot("e2e-deleted")
 
 	It("Create Shoot, Enable and Disable OIDC Extension, Delete Shoot", Label("good-case"), func() {
 		By("Create Shoot")

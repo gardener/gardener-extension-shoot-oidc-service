@@ -23,7 +23,7 @@ import (
 
 var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 	f := defaultShootCreationFramework()
-	f.Shoot = defaultShoot("disrupted-")
+	f.Shoot = defaultShoot("e2e-disrupted")
 
 	It("Create Shoot, Enable OIDC Extension, Disrupt API Server, Reconcile and Delete Shoot", Label("bad-case"), func() {
 		By("Create Shoot")
