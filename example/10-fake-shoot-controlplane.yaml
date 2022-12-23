@@ -88,6 +88,24 @@ data:
   kubeconfig: <kubeconfig-base64-encoded>
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: service-account-key
+  namespace: shoot--foo--bar
+type: Opaque
+data:
+  id_rsa: <rsa-key-base64-encoded>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: service-account-key-bundle
+  namespace: shoot--foo--bar
+type: Opaque
+data:
+  bundle.key: <private-key-base64-encoded>
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: kube-apiserver
@@ -133,9 +151,8 @@ spec:
     spec:
       containers:
       - command:
-        - /hyperkube
-        - kube-apiserver
-        - --enable-admission-plugins=Priority,NamespaceLifecycle,LimitRanger,PodSecurityPolicy,ServiceAccount,NodeRestriction,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota,StorageObjectInUseProtection,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
+        - /usr/local/bin/kube-apiserver
+        - --enable-admission-plugins=Priority,NamespaceLifecycle,LimitRanger,ServiceAccount,NodeRestriction,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota,StorageObjectInUseProtection,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
         - --disable-admission-plugins=PersistentVolumeLabel
         - --allow-privileged=true
         - --anonymous-auth=false
@@ -147,14 +164,16 @@ spec:
         - --endpoint-reconciler-type=none
         - --etcd-servers=http://etcd:2379
         - --kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP
-        - --insecure-port=0
         - --profiling=false
         - --secure-port=443
         - --service-cluster-ip-range=100.64.0.0/13
         - --tls-cert-file=/srv/kubernetes/apiserver/kube-apiserver.crt
         - --tls-private-key-file=/srv/kubernetes/apiserver/kube-apiserver.key
+        - --service-account-issuer=https://api.shoot-foo-bar.com
+        - --service-account-signing-key-file=/srv/kubernetes/service-account-key/id_rsa
+        - --service-account-key-file=/srv/kubernetes/service-account-key-bundle/bundle.key
         - --v=2
-        image: registry.k8s.io/hyperkube:v1.15.1
+        image: registry.k8s.io/kube-apiserver:v1.24.6
         imagePullPolicy: IfNotPresent
         name: kube-apiserver
         ports:
@@ -171,6 +190,10 @@ spec:
           name: ca
         - mountPath: /srv/kubernetes/apiserver
           name: kube-apiserver
+        - mountPath: /srv/kubernetes/service-account-key
+          name: service-account-key
+        - mountPath: /srv/kubernetes/service-account-key-bundle
+          name: service-account-key-bundle
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -188,3 +211,11 @@ spec:
         secret:
           defaultMode: 420
           secretName: kube-apiserver
+      - name: service-account-key
+        secret:
+          defaultMode: 420
+          secretName: service-account-key
+      - name: service-account-key-bundle
+        secret:
+          defaultMode: 420
+          secretName: service-account-key-bundle
