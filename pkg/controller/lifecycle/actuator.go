@@ -328,6 +328,13 @@ func getLabels() map[string]string {
 	}
 }
 
+func getHighAvailabilityLabel() map[string]string {
+	return map[string]string{
+		// TODO(timuthy): Use `HighAvailabilityConfigType` constant as soon as vendored to Gardener v1.60
+		"high-availability-config.resources.gardener.cloud/type": "server",
+	}
+}
+
 func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
 		tcpProto         = corev1.ProtocolTCP
@@ -387,10 +394,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.ApplicationName,
 			Namespace: namespace,
-			Labels: utils.MergeStringMaps(getLabels(), map[string]string{
-				// TODO(timuthy): Use `HighAvailabilityConfigType` constant as soon as vendored to Gardener v1.60
-				"high-availability-config.resources.gardener.cloud/type": "server",
-			}),
+			Labels:    utils.MergeStringMaps(getLabels(), getHighAvailabilityLabel()),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas:             oidcReplicas,
@@ -629,14 +633,17 @@ func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
 	var (
 		minReplicas, maxReplicas int32 = 1, 3
 		targetAverageUtilization int32 = 80
+
+		objectMeta = metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+			Labels:    getHighAvailabilityLabel(),
+		}
 	)
 
 	if versionutils.ConstraintK8sGreaterEqual123.Check(k8sVersion) {
 		return &autoscalingv2.HorizontalPodAutoscaler{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName,
-				Namespace: namespace,
-			},
+			ObjectMeta: objectMeta,
 			Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 				ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 					APIVersion: appsv1.SchemeGroupVersion.String(),
@@ -661,10 +668,7 @@ func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
 		}
 	}
 	return &autoscalingv2beta1.HorizontalPodAutoscaler{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.ApplicationName,
-			Namespace: namespace,
-		},
+		ObjectMeta: objectMeta,
 		Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
 			ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
 				APIVersion: appsv1.SchemeGroupVersion.String(),
