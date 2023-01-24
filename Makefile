@@ -12,12 +12,13 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 LD_FLAGS                    := "-w $(shell $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(EXTENSION_PREFIX)-$(NAME))"
 LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
+GOARCH                      ?= $(shell go env GOARCH)
 
 
 WEBHOOK_CONFIG_PORT	:= 8449
 WEBHOOK_CONFIG_MODE	:= url
 WEBHOOK_CONFIG_URL	:= host.docker.internal:$(WEBHOOK_CONFIG_PORT)
-EXTENSION_NAMESPACE	:= 
+EXTENSION_NAMESPACE	:=
 
 WEBHOOK_PARAM := --webhook-config-url=$(WEBHOOK_CONFIG_URL)
 ifeq ($(WEBHOOK_CONFIG_MODE), service)
@@ -59,7 +60,7 @@ docker-login:
 
 .PHONY: docker-images
 docker-images:
-	@docker build -t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
+	@docker build --build-arg TARGETARCH=$(GOARCH) -t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
