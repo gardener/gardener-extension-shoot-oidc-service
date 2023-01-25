@@ -5,9 +5,10 @@
 ############# builder
 FROM golang:1.19.4 AS builder
 
+ARG TARGETARCH
 WORKDIR /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
 COPY . .
-RUN make install
+RUN make install GOARCH=$TARGETARCH
 
 ############# gardener-extension-shoot-oidc-service
 FROM gcr.io/distroless/static-debian11:nonroot AS gardener-extension-shoot-oidc-service
