@@ -16,6 +16,15 @@ An example for a `ControllerRegistration` resource that can be used to register 
 
 Please find more information regarding the extensibility concepts and a detailed proposal [here](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md).
 
+## Compatibility
+
+The following lists known compatibility issues of this extension controller with other Gardener components.
+
+| OIDC Extension | Gardener | Action | Notes |
+| ------------- | -------- | ------ |  --- |
+| `>= v0.15.0` | `>= 1.60.0 <v1.63.0` | Please update Gardener components to `>= v1.63.0` | A typically side-effect of running this combination is an unexpected scale-down of the OIDC webhook from `2 -> 1`. |
+----
+
 ## Extension Resources
 
 Example extension resource:

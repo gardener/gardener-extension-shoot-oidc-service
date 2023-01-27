@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-{{- if gt (int .Values.replicaCount) 1 }}
 {{- if semverCompare ">= 1.21-0" .Capabilities.KubeVersion.GitVersion }}
 apiVersion: policy/v1
 {{- else }}
@@ -17,9 +16,8 @@ metadata:
     app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
-  maxUnavailable: {{ sub (int .Values.replicaCount) 1 }}
+  maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}

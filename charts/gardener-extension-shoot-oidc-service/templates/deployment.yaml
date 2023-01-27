@@ -16,6 +16,7 @@ metadata:
     app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
     helm.sh/chart: gardener-extension-{{ .Values.serviceName }}
     app.kubernetes.io/instance: {{ .Release.Name }}
+    high-availability-config.resources.gardener.cloud/type: server
 spec:
   revisionHistoryLimit: 0
   replicas: {{ .Values.replicaCount }}

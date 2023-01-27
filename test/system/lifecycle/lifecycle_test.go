@@ -24,6 +24,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -34,8 +35,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -79,13 +82,24 @@ var _ = Describe("Shoot oidc service testing", func() {
 			},
 		}
 
-		// Verify that the oidc deployment exists and is deployed with the correct number of replicas
-		err = f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)
-		Expect(err).ToNot(HaveOccurred())
+		By("Verify that the oidc deployment exists and is deployed with the correct number of replicas")
+		Expect(f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)).To(Succeed())
 		one := int32(1)
-		Expect(*oidcDeployment.Spec.Replicas).To(BeNumerically(">=", one))
+		Expect(oidcDeployment.Spec.Replicas).To(PointTo(BeNumerically(">=", one)))
 		Expect(oidcDeployment.Status.ReadyReplicas).To(BeNumerically(">=", one))
 
+		oidcPDB := &policyv1.PodDisruptionBudget{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ApplicationName,
+				Namespace: f.ShootSeedNamespace(),
+			},
+		}
+
+		By("Verify that PodDisruptionBudget is correctly configured")
+		Expect(f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcPDB), oidcPDB)).To(Succeed())
+		Expect(oidcPDB.Spec.MaxUnavailable).To(PointTo(Equal(intstr.FromInt(1))))
+
+		By("Check OIDC config")
 		oidConfig, err := getOIDConfig(ctx, f.SeedClient.RESTClient())
 		if err == nil {
 			jwksURL, err := url.Parse(oidConfig.JWKSURL)
@@ -183,16 +197,16 @@ var _ = Describe("Shoot oidc service testing", func() {
 			f.Logger.Info(fmt.Sprintf("Cannot register the seed as identity provider. Error: %s. The verification of oidc provider registration was skipped. Continuing with test execution...", err.Error()))
 		}
 
-		// Ensure that the OIDC service is disabled in order to verify the deletion process
+		By("Ensure that the OIDC service is disabled in order to verify the deletion process")
 		err = f.UpdateShoot(ctx, ensureOIDCServiceIsDisabled)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Ensure that oidc authenticator deployment is deleted
+		By("Ensure that oidc authenticator deployment is deleted")
 		err = f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(BeNotFoundError())
 
-		// Ensure that manually deployed secrets are deleted
+		By("Ensure that manually deployed secrets are deleted")
 		for _, name := range []string{
 			gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
 			gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
