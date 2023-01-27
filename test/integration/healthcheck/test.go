@@ -22,11 +22,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/test/framework"
 	healthcheckoperation "github.com/gardener/gardener/test/testmachinery/extensions/healthcheck"
 	"github.com/onsi/ginkgo/v2"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 )
 
 const (

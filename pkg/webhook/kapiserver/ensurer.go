@@ -9,10 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
-	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
-
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -21,6 +17,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
 )
 
 const (

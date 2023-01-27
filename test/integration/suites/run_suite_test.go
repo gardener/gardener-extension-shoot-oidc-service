@@ -13,10 +13,10 @@ import (
 	"github.com/gardener/gardener/test/framework"
 	"github.com/gardener/gardener/test/framework/config"
 	"github.com/gardener/gardener/test/framework/reporter"
-
-	_ "github.com/gardener/gardener-extension-shoot-oidc-service/test/integration/healthcheck"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	_ "github.com/gardener/gardener-extension-shoot-oidc-service/test/integration/healthcheck"
 )
 
 // go test -timeout 1200s ./test/integration/suites/run_suite_test.go --kubecfg=PATH --project-namespace=PROJ-NAMESPACE --shoot-name=SHOOT_NAME

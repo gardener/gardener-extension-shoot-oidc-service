@@ -7,11 +7,11 @@ package app
 import (
 	"os"
 
-	oidccmd "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/cmd"
-
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+
+	oidccmd "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/cmd"
 )
 
 // ExtensionName is the name of the extension.

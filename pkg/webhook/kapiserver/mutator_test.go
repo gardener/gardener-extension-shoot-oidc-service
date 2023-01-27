@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
-
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -32,6 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 )
 
 var _ = Describe("Mutator", func() {
