@@ -5,12 +5,12 @@
 package secrets
 
 import (
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
-
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 )
 
 const (

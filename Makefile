@@ -93,12 +93,13 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
 .PHONY: generate
-generate: $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(CONTROLLER_GEN)
+generate: $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(CONTROLLER_GEN) $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@GO111MODULE=off hack/update-codegen.sh
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
+	$(MAKE) format
 
 .PHONY: format
-format: $(GOIMPORTS)
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg ./test
 
 .PHONY: test

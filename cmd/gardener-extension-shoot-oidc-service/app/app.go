@@ -8,13 +8,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/healthcheck"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/lifecycle"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
-
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	componentbaseconfig "k8s.io/component-base/config"
@@ -22,6 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/healthcheck"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/lifecycle"
 )
 
 // NewServiceControllerCommand creates a new command that is used to start the OIDC Service controller.

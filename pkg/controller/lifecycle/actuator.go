@@ -10,11 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
-
+	"github.com/Masterminds/semver"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -28,10 +24,6 @@ import (
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	versionutils "github.com/gardener/gardener/pkg/utils/version"
-	policyv1 "k8s.io/api/policy/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
-
-	"github.com/Masterminds/semver"
 	"github.com/go-logr/logr"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -39,6 +31,8 @@ import (
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	policyv1 "k8s.io/api/policy/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -54,6 +48,11 @@ import (
 	"k8s.io/utils/clock"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
 )
 
 const (
@@ -188,7 +187,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	if err := managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, false, shootResources); err != nil {
+	if err := managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, constants.ServiceName, false, shootResources); err != nil {
 		return err
 	}
 

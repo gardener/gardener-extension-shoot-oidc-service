@@ -7,15 +7,15 @@ package main
 import (
 	"os"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/cmd/gardener-extension-shoot-oidc-service/app"
 	"github.com/gardener/gardener/pkg/logger"
-
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/cmd/gardener-extension-shoot-oidc-service/app"
 )
 
 func main() {
-	runtimelog.SetLogger(logger.ZapLogger(false))
+	runtimelog.SetLogger(logger.MustNewZapLogger(logger.InfoLevel, logger.FormatJSON))
 
 	ctx := signals.SetupSignalHandler()
 	if err := app.NewServiceControllerCommand().ExecuteContext(ctx); err != nil {

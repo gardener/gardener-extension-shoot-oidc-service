@@ -22,7 +22,7 @@ The following lists known compatibility issues of this extension controller with
 
 | OIDC Extension | Gardener | Action | Notes |
 | ------------- | -------- | ------ |  --- |
-| `>= v0.15.0` | `>= 1.60.0 <v1.63.0` | Please update Gardener components to `>= v1.63.0` | A typically side-effect of running this combination is an unexpected scale-down of the OIDC webhook from `2 -> 1`. |
+| `>= v0.15.0` | `>= 1.60.0 < v1.63.0` | Please update Gardener components to `>= v1.63.0` | A typical side-effect of running this combination is an unexpected scale-down of the OIDC webhook from `2 -> 1`. |
 ----
 
 ## Extension Resources
