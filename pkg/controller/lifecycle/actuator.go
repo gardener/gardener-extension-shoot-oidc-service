@@ -330,7 +330,7 @@ func getLabels() map[string]string {
 
 func getHighAvailabilityLabel() map[string]string {
 	return map[string]string{
-		resourcesv1alpha1.HighAvailabilityConfigType: "server",
+		resourcesv1alpha1.HighAvailabilityConfigType: resourcesv1alpha1.HighAvailabilityConfigTypeServer,
 	}
 }
 
