@@ -16,6 +16,7 @@ import (
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	gardenerkubernetes "github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils"
@@ -329,8 +330,7 @@ func getLabels() map[string]string {
 
 func getHighAvailabilityLabel() map[string]string {
 	return map[string]string{
-		// TODO(timuthy): Use `HighAvailabilityConfigType` constant as soon as vendored to Gardener v1.60
-		"high-availability-config.resources.gardener.cloud/type": "server",
+		resourcesv1alpha1.HighAvailabilityConfigType: resourcesv1alpha1.HighAvailabilityConfigTypeServer,
 	}
 }
 
