@@ -316,7 +316,7 @@ var _ = Describe("Secrets filter", func() {
 	It("should correctly extract the secret with the newest ca bundle", func() {
 		secrets := make([]corev1.Secret, 31)
 		namespace := "test"
-		mathrand.Seed(time.Now().UnixNano())
+		random := mathrand.New(mathrand.NewSource(time.Now().UnixNano())) //nolint:gosec
 		now := time.Now().Unix()
 		for i := 0; i < 30; i++ {
 			name := rand.String(10)
@@ -342,7 +342,7 @@ var _ = Describe("Secrets filter", func() {
 		}
 
 		for i := 0; i < 20; i++ {
-			mathrand.Shuffle(len(secrets), func(i, j int) { secrets[i], secrets[j] = *secrets[j].DeepCopy(), *secrets[i].DeepCopy() })
+			random.Shuffle(len(secrets), func(i, j int) { secrets[i], secrets[j] = *secrets[j].DeepCopy(), *secrets[i].DeepCopy() })
 
 			newest, err := getLatestIssuedSecret(secrets)
 			Expect(err).NotTo(HaveOccurred())
