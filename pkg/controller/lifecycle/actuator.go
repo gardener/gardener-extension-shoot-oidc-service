@@ -427,7 +427,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 						v1beta1constants.LabelNetworkPolicyToDNS:                                                            v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks:                                                 v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPrivateNetworks:                                                v1beta1constants.LabelNetworkPolicyAllowed,
-						v1beta1constants.LabelNetworkPolicyToAllShootAPIServers:                                             v1beta1constants.LabelNetworkPolicyAllowed,
 						gutil.NetworkPolicyLabel(v1beta1constants.DeploymentNameKubeAPIServer, kubeapiserverconstants.Port): v1beta1constants.LabelNetworkPolicyAllowed,
 					}),
 				},
