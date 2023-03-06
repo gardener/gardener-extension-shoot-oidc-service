@@ -19,6 +19,7 @@ import (
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	gardenerkubernetes "github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/extensions"
+	kubeapiserverconstants "github.com/gardener/gardener/pkg/operation/botanist/component/kubeapiserver/constants"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
@@ -33,7 +34,6 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -352,7 +352,6 @@ func getHighAvailabilityLabel() map[string]string {
 
 func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
-		tcpProto         = corev1.ProtocolTCP
 		port10443        = intstr.FromInt(10443)
 		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
 		requestCPU, _    = resource.ParseQuantity("50m")
@@ -426,7 +425,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: utils.MergeStringMaps(getLabels(), map[string]string{
 						v1beta1constants.LabelNetworkPolicyToDNS:                                                            v1beta1constants.LabelNetworkPolicyAllowed,
-						v1beta1constants.LabelNetworkPolicyFromShootAPIServer:                                               v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks:                                                 v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPrivateNetworks:                                                v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToAllShootAPIServers:                                             v1beta1constants.LabelNetworkPolicyAllowed,
@@ -560,42 +558,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 						Protocol:   corev1.ProtocolTCP,
 						Port:       443,
 						TargetPort: port10443,
-					},
-				},
-			},
-		},
-		&networkingv1.NetworkPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName + "-allow-kube-apiserver",
-				Namespace: namespace,
-				Labels:    getLabels(),
-			},
-			Spec: networkingv1.NetworkPolicySpec{
-				// TODO: add namespace selector when NamespaceDefaultLabelName feature gate becomes GA
-				PodSelector: metav1.LabelSelector{
-					MatchExpressions: []metav1.LabelSelectorRequirement{
-						{
-							Key:      v1beta1constants.LabelRole,
-							Operator: metav1.LabelSelectorOpIn,
-							Values:   []string{v1beta1constants.LabelAPIServer},
-						},
-						{
-							Key:      v1beta1constants.GardenRole,
-							Operator: metav1.LabelSelectorOpIn,
-							Values:   []string{v1beta1constants.GardenRoleControlPlane},
-						},
-					},
-				},
-				PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeEgress},
-				Egress: []networkingv1.NetworkPolicyEgressRule{
-					{
-						Ports: []networkingv1.NetworkPolicyPort{{
-							Protocol: &tcpProto,
-							Port:     &port10443,
-						}},
-						To: []networkingv1.NetworkPolicyPeer{{
-							PodSelector: &metav1.LabelSelector{MatchLabels: getLabels()},
-						}},
 					},
 				},
 			},

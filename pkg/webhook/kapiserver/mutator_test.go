@@ -25,7 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	rand "k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -107,6 +107,8 @@ var _ = Describe("Mutator", func() {
 
 			Expect(c.VolumeMounts).To(ContainElement(tokenValidatorSecretVolumeMount))
 			Expect(deployment.Spec.Template.Spec.Volumes).To(ContainElement(tokenValidatorSecretVolume))
+
+			Expect(deployment.Spec.Template.Labels).To(HaveKeyWithValue("networking.resources.gardener.cloud/to-oidc-webhook-authenticator-tcp-10443", "allowed"))
 		}
 		checkDeploymentIsNotMutated = func(deployment *appsv1.Deployment) {
 			// Check that the kube-apiserver container still exists
@@ -140,6 +142,8 @@ var _ = Describe("Mutator", func() {
 					}
 				}
 			}
+
+			Expect(deployment.Spec.Template.Labels).NotTo(HaveKey("networking.resources.gardener.cloud/to-oidc-webhook-authenticator-tcp-10443"))
 		}
 
 		encode = func(obj runtime.Object) []byte {
