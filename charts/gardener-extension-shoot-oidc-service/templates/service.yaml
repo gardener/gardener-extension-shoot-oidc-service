@@ -8,8 +8,9 @@ kind: Service
 metadata:
   name: gardener-extension-{{ .Values.serviceName }}
   namespace: {{ .Release.Namespace }}
-{{- if .Values.ignoreResources }}
   annotations:
+    networking.resources.gardener.cloud/from-world-to-ports: '[{"protocol":"TCP","port":{{ .Values.webhookConfig.serverPort }}}]'
+{{- if .Values.ignoreResources }}
     resources.gardener.cloud/ignore: "true"
 {{- end }}
   labels:
