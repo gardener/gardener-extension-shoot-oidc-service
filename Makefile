@@ -28,8 +28,6 @@ endif
 TOOLS_DIR := $(REPO_ROOT)/hack/tools
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
-GOLANGCI_LINT_VERSION := v1.51.1
-
 .PHONY: start
 start:
 	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \

@@ -12,12 +12,11 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
+	config "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	configv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-
-	config "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 )
 
 func init() {

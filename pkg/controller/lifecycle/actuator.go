@@ -397,7 +397,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas:             oidcReplicas,
-			RevisionHistoryLimit: pointer.Int32Ptr(1),
+			RevisionHistoryLimit: pointer.Int32(1),
 			Selector:             &metav1.LabelSelector{MatchLabels: getLabels()},
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
