@@ -18,14 +18,12 @@ Please find more information regarding the extensibility concepts and a detailed
 
 ## Compatibility
 
-The following lists known compatibility issues of this extension controller with other Gardener components.
+The following lists compatibility requirements of this extension controller with regards to other Gardener components.
 
-| OIDC Extension         | Gardener                                                                     | Action                                                                   | Notes                                                                                                                                                                         |
-|------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `>= v0.15.0, < 0.16.0` | `>= 1.60.0 < v1.64.0`                                                        | Please update Gardener components to `>= v1.63.0`                        | A typical side-effect of running this combination is an unexpected scale-down of the OIDC webhook from `2 -> 1`.                                                              |
-| `< v0.16.0`            | `>= 1.64.0`                                                                  | Please update extension version to `>= v0.16.0`                          | A typical side-effect of running this combination is that establishing trust to an API server of a shoot cluster on the same seed is not possible.                            |
-| `< v0.16.0`            | `>= 1.66.0` with enabled `FullNetworkPoliciesInRuntimeCluster` feature gate  | Please update extension version to `>= v0.16.0` or disable feature gate. | A typical side-effect of running this combination is that the extension will not work at all since it was not yet adapted to the `NetworkPolicy`-related changes in Gardener. |
-
+| OIDC Extension | Gardener                                                                     | Notes                                                                    |
+|----------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `== v0.15.0`   | `>= 1.60.0 <= v1.64.0`                                                       | A typical side-effect when running Gardener < v1.63.0 is an unexpected scale-down of the OIDC webhook from `2 -> 1`.|
+| `== v0.16.0`   | `>= 1.65.0`                                                                  |                                                                          |
 ----
 
 ## Extension Resources
