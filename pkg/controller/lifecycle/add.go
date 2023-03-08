@@ -40,7 +40,7 @@ type AddOptions struct {
 // AddToManager adds a OIDC Service Lifecycle controller to the given Controller Manager.
 func AddToManager(mgr manager.Manager) error {
 	return extension.Add(mgr, extension.AddArgs{
-		Actuator:          NewActuator(DefaultAddOptions.ServiceConfig.Configuration),
+		Actuator:          NewActuator(DefaultAddOptions.ServiceConfig.Configuration, mgr.GetAPIReader()),
 		ControllerOptions: DefaultAddOptions.ControllerOptions,
 		Name:              Name,
 		FinalizerSuffix:   FinalizerSuffix,
