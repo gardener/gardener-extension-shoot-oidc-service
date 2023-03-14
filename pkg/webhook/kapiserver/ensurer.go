@@ -92,6 +92,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 		}
 
 		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)
+		metav1.SetMetaDataLabel(&new.Spec.Template.ObjectMeta, gutil.NetworkPolicyLabel(constants.ApplicationName, 10443), v1beta1constants.LabelNetworkPolicyAllowed)
 	}
 
 	return nil
