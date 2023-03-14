@@ -22,7 +22,9 @@ import (
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	"github.com/gardener/gardener/pkg/utils/kubernetes/health"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
+	"github.com/gardener/gardener/pkg/utils/retry"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
@@ -65,14 +67,16 @@ const (
 var crdContent []byte
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(config config.Configuration) extension.Actuator {
+func NewActuator(config config.Configuration, reader client.Reader) extension.Actuator {
 	return &actuator{
 		serviceConfig: config,
+		reader:        reader,
 	}
 }
 
 type actuator struct {
 	client        client.Client
+	reader        client.Reader
 	clientset     kubernetes.Interface
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
@@ -200,6 +204,18 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 	timeoutSeedCtx, cancelSeedCtx := context.WithTimeout(ctx, twoMinutes)
 	defer cancelSeedCtx()
 	if err := managedresources.WaitUntilHealthy(timeoutSeedCtx, a.client, namespace, constants.ManagedResourceNamesSeed); err != nil {
+		return err
+	}
+
+	oidcDeployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+		},
+	}
+	timeoutRoulloutCtx, cancelWaitRollout := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancelWaitRollout()
+	if err := retry.Until(timeoutRoulloutCtx, 5*time.Second, health.IsDeploymentUpdated(a.reader, oidcDeployment)); err != nil {
 		return err
 	}
 
