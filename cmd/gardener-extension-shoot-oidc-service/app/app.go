@@ -80,7 +80,6 @@ func (o *Options) run(ctx context.Context) error {
 	ctrlConfig := o.oidcOptions.Completed()
 	ctrlConfig.ApplyHealthCheckConfig(&healthcheck.DefaultAddOptions.HealthCheckConfig)
 	ctrlConfig.Apply(&lifecycle.DefaultAddOptions.ServiceConfig)
-	o.controllerOptions.Completed().Apply(&lifecycle.DefaultAddOptions.ControllerOptions)
 	o.lifecycleOptions.Completed().Apply(&lifecycle.DefaultAddOptions.ControllerOptions)
 	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
