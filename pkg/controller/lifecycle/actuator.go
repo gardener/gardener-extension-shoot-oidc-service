@@ -460,10 +460,22 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							// fmt.Sprintf("--api-audiences=oidc-webhook-authenticator-%s", namespace),
 							"--v=2",
 						},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path:   "/readyz",
+									Port:   port10443,
+									Scheme: "HTTPS",
+								},
+							},
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       5,
+							FailureThreshold:    3,
+						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
-									Path:   "/healthz",
+									Path:   "/livez",
 									Port:   port10443,
 									Scheme: "HTTPS",
 								},
@@ -548,6 +560,10 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				Name:      constants.ApplicationName,
 				Namespace: namespace,
 				Labels:    getLabels(),
+				Annotations: map[string]string{
+					resourcesv1alpha1.NetworkingFromPolicyPodLabelSelector: v1beta1constants.LabelNetworkPolicyScrapeTargets,
+					resourcesv1alpha1.NetworkingFromPolicyAllowedPorts:     `[{"protocol":"TCP","port":10443}]`,
+				},
 			},
 			Spec: corev1.ServiceSpec{
 				Type:     corev1.ServiceTypeClusterIP,
@@ -560,6 +576,41 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 						TargetPort: port10443,
 					},
 				},
+			},
+		},
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ApplicationName + "-monitoring",
+				Namespace: namespace,
+				Labels:    utils.MergeStringMaps(getLabels(), map[string]string{v1beta1constants.LabelExtensionConfiguration: v1beta1constants.LabelMonitoring}),
+			},
+			Data: map[string]string{
+				v1beta1constants.PrometheusConfigMapScrapeConfig: `- job_name: ` + constants.ApplicationName + `
+  scheme: https
+  metrics_path: /metrics
+  authorization:
+    type: Bearer
+    credentials_file: /var/run/secrets/gardener.cloud/shoot/token/token
+  tls_config:
+    insecure_skip_verify: true
+  honor_labels: false
+  kubernetes_sd_configs:
+  - role: endpoints
+    namespaces:
+      names: [` + namespace + `]
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+    action: keep
+    regex: ` + constants.ApplicationName + `;https
+  - source_labels: [ __meta_kubernetes_pod_name ]
+    target_label: pod
+  - source_labels: [__meta_kubernetes_namespace]
+    target_label: namespace
+  metric_relabel_configs:
+  - source_labels: [ __name__ ]
+    regex: ^(oidc_webhook_authenticator_.+)$
+    action: keep
+`,
 			},
 		},
 	)
