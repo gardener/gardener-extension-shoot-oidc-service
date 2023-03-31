@@ -460,10 +460,22 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							// fmt.Sprintf("--api-audiences=oidc-webhook-authenticator-%s", namespace),
 							"--v=2",
 						},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path:   "/readyz",
+									Port:   port10443,
+									Scheme: "HTTPS",
+								},
+							},
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       5,
+							FailureThreshold:    3,
+						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
-									Path:   "/healthz",
+									Path:   "/livez",
 									Port:   port10443,
 									Scheme: "HTTPS",
 								},
