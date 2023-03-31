@@ -121,3 +121,7 @@ verify-extended: check-generate check check-docforge format test test-cov test-c
 .PHONY: test-e2e-local
 test-e2e-local: $(KIND) $(YQ) $(GINKGO)
 	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh --procs=3
+
+.PHONY: oidc-up
+oidc-up: $(KIND) $(YQ)
+	@$(REPO_ROOT)/hack/oidc-up.sh
