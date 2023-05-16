@@ -561,6 +561,9 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				Namespace: namespace,
 				Labels:    getLabels(),
 				Annotations: map[string]string{
+					"networking.resources.gardener.cloud/from-" + v1beta1constants.LabelNetworkPolicyScrapeTargets + "-to-ports": `[{"protocol":"TCP","port":10443}]`,
+					"networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports":                                 `[{"protocol":"TCP","port":10443}]`,
+					// TODO: This label approach is deprecated and no longer needed in the future. Remove them as soon as gardener/gardener@v1.75 has been released.
 					resourcesv1alpha1.NetworkingFromPolicyPodLabelSelector: v1beta1constants.LabelNetworkPolicyScrapeTargets,
 					resourcesv1alpha1.NetworkingFromPolicyAllowedPorts:     `[{"protocol":"TCP","port":10443}]`,
 				},

@@ -92,6 +92,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 		}
 
 		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)
+		// TODO: This label approach is deprecated and no longer needed in the future. Remove it as soon as gardener/gardener@v1.75 has been released.
 		metav1.SetMetaDataLabel(&new.Spec.Template.ObjectMeta, gutil.NetworkPolicyLabel(constants.ApplicationName, 10443), v1beta1constants.LabelNetworkPolicyAllowed)
 	}
 
