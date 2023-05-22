@@ -151,7 +151,6 @@ func ensureOIDCResourcesAreCleaned(ctx context.Context, c client.Client, namespa
 	for _, name := range []string{
 		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
 		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
-		constants.WebhookTLSSecretName,
 	} {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
