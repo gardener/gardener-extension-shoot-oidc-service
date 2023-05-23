@@ -22,7 +22,6 @@ import (
 	kubeapiserverconstants "github.com/gardener/gardener/pkg/operation/botanist/component/kubeapiserver/constants"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/kubernetes/health"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/gardener/gardener/pkg/utils/retry"
@@ -231,12 +230,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	if err := secretsManager.Cleanup(ctx); err != nil {
-		return err
-	}
-
-	// TODO(rfranzke): Remove in a future release
-	return kutil.DeleteObject(ctx, a.client, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookTLSSecretName, Namespace: namespace}})
+	return secretsManager.Cleanup(ctx)
 }
 
 // Delete the Extension resource.
@@ -269,8 +263,6 @@ func (a *actuator) Delete(ctx context.Context, log logr.Logger, ex *extensionsv1
 	for _, name := range []string{
 		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
 		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
-		// TODO(rfranzke): Remove this in a future release.
-		constants.WebhookTLSSecretName,
 	} {
 		if err := a.deleteSecret(ctx, name, namespace); err != nil {
 			return err

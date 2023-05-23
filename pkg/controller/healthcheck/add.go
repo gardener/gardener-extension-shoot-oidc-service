@@ -45,8 +45,7 @@ func RegisterHealthChecks(mgr manager.Manager, opts healthcheck.DefaultAddArgs) 
 				HealthCheck:   general.CheckManagedResource(constants.ManagedResourceNamesSeed),
 			},
 		},
-		// TODO(shafeeqes): Remove this condition in a future version.
-		sets.New[gardencorev1beta1.ConditionType](gardencorev1beta1.ShootSystemComponentsHealthy),
+		sets.New[gardencorev1beta1.ConditionType](),
 	)
 }
 
