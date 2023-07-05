@@ -162,7 +162,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 			// Expect API calls to be authenticated
 			Eventually(func() status {
-				statusError, err := requestAPIServer(f.ShootClient.RESTConfig().CAData, f.ShootClient.RESTConfig().Host, tokenReq.Status.Token)
+				statusError, err := requestAPIServer(ctx, f.ShootClient.RESTConfig().CAData, f.ShootClient.RESTConfig().Host, tokenReq.Status.Token)
 				Expect(err).ToNot(HaveOccurred())
 
 				return status{
@@ -182,7 +182,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 			expectedStatus.Message = "Unauthorized"
 			expectedStatus.Reason = string(metav1.StatusReasonUnauthorized)
 			Eventually(func() status {
-				statusError, err := requestAPIServer(f.ShootClient.RESTConfig().CAData, f.ShootClient.RESTConfig().Host, tokenReq.Status.Token)
+				statusError, err := requestAPIServer(ctx, f.ShootClient.RESTConfig().CAData, f.ShootClient.RESTConfig().Host, tokenReq.Status.Token)
 				Expect(err).ToNot(HaveOccurred())
 
 				return status{
@@ -280,8 +280,8 @@ func getJWKS(ctx context.Context, client rest.Interface, relativeURI string) ([]
 	return jwksReq.DoRaw(ctx)
 }
 
-func requestAPIServer(caBundle []byte, apiserverURL, bearerToken string) (*metav1.Status, error) {
-	req, err := http.NewRequest("GET", apiserverURL, nil)
+func requestAPIServer(ctx context.Context, caBundle []byte, apiserverURL, bearerToken string) (*metav1.Status, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", apiserverURL, nil)
 	if err != nil {
 		return nil, err
 	}
