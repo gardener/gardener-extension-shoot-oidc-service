@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,9 +56,10 @@ func (healthChecker *ManagedResourceHealthChecker) SetLoggerSuffix(provider, ext
 }
 
 // DeepCopy clones the healthCheck struct by making a copy and returning the pointer to that new copy
+// Actually, it does not perform a *deep* copy.
 func (healthChecker *ManagedResourceHealthChecker) DeepCopy() healthcheck.HealthCheck {
-	copy := *healthChecker
-	return &copy
+	shallowCopy := *healthChecker
+	return &shallowCopy
 }
 
 // Check executes the health check

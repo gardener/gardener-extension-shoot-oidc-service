@@ -58,7 +58,7 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 		},
 		Spec: gardencorev1beta1.ShootSpec{
 			Region:            "local",
-			SecretBindingName: "local",
+			SecretBindingName: pointer.String("local"),
 			CloudProfileName:  "local",
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version:                     "1.25.4",
@@ -70,8 +70,8 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 				},
 				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
 			},
-			Networking: gardencorev1beta1.Networking{
-				Type:           "calico",
+			Networking: &gardencorev1beta1.Networking{
+				Type:           pointer.String("calico"),
 				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"calico.networking.extensions.gardener.cloud/v1alpha1","kind":"NetworkConfig","typha":{"enabled":false},"backend":"none"}`)},
 			},
 			Provider: gardencorev1beta1.Provider{

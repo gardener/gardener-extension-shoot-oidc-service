@@ -281,7 +281,7 @@ func getJWKS(ctx context.Context, client rest.Interface, relativeURI string) ([]
 }
 
 func requestAPIServer(ctx context.Context, caBundle []byte, apiserverURL, bearerToken string) (*metav1.Status, error) {
-	req, err := http.NewRequest("GET", apiserverURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiserverURL, nil)
 	if err != nil {
 		return nil, err
 	}

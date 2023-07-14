@@ -18,8 +18,8 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	gardenerkubernetes "github.com/gardener/gardener/pkg/client/kubernetes"
+	kubeapiserverconstants "github.com/gardener/gardener/pkg/component/kubeapiserver/constants"
 	"github.com/gardener/gardener/pkg/extensions"
-	kubeapiserverconstants "github.com/gardener/gardener/pkg/operation/botanist/component/kubeapiserver/constants"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	"github.com/gardener/gardener/pkg/utils/kubernetes/health"
@@ -34,7 +34,6 @@ import (
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -382,7 +381,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		return nil, err
 	}
 
-	pdb, err := buildPDB(namespace, k8sVersion)
+	pdb, err := buildPDB(namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate PodDisruptionBudget %v", err)
 	}
@@ -617,37 +616,18 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	return resources, nil
 }
 
-func buildPDB(namespace string, k8sVersion *semver.Version) (client.Object, error) {
-	k8sVersionGreaterEqual121, err := versionutils.CompareVersions(k8sVersion.String(), ">=", "v1.21")
-	if err != nil {
-		return nil, err
-	}
-
-	objectMeta := metav1.ObjectMeta{
-		Name:      constants.ApplicationName,
-		Namespace: namespace,
-		Labels:    getLabels(),
-	}
-
+func buildPDB(namespace string) (client.Object, error) {
 	pdbMaxUnavailable := intstr.FromInt(1)
-	pdbSelector := &metav1.LabelSelector{MatchLabels: getLabels()}
-
-	// TODO(timuthy): Drop the following code block as soon as v1.20 support for seed clusters has been discontinued.
-	if !k8sVersionGreaterEqual121 {
-		return &policyv1beta1.PodDisruptionBudget{
-			ObjectMeta: objectMeta,
-			Spec: policyv1beta1.PodDisruptionBudgetSpec{
-				MaxUnavailable: &pdbMaxUnavailable,
-				Selector:       pdbSelector,
-			},
-		}, nil
-	}
 
 	return &policyv1.PodDisruptionBudget{
-		ObjectMeta: objectMeta,
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+			Labels:    getLabels(),
+		},
 		Spec: policyv1.PodDisruptionBudgetSpec{
 			MaxUnavailable: &pdbMaxUnavailable,
-			Selector:       pdbSelector,
+			Selector:       &metav1.LabelSelector{MatchLabels: getLabels()},
 		},
 	}, nil
 }
