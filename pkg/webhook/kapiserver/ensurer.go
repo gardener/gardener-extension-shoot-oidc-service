@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
@@ -41,13 +42,6 @@ type ensurer struct {
 	genericmutator.NoopEnsurer
 	client client.Client
 	logger logr.Logger
-}
-
-// InjectClient injects the given client into the ensurer.
-func (e *ensurer) InjectClient(client client.Client) error {
-	e.client = client
-
-	return nil
 }
 
 // NewSecretsManager is an alias for extensionssecretsmanager.SecretsManagerForCluster.
@@ -100,8 +94,9 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 }
 
 // NewEnsurer creates a new oidc mutator.
-func NewEnsurer(logger logr.Logger) genericmutator.Ensurer {
+func NewEnsurer(mgr manager.Manager, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
+		client: mgr.GetClient(),
 		logger: logger.WithName("oidc-controlplane-ensurer"),
 	}
 }

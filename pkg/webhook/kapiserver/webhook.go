@@ -26,7 +26,8 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	fciCodec := oscutils.NewFileContentInlineCodec()
 
 	mutator := genericmutator.NewMutator(
-		NewEnsurer(logger),
+		mgr,
+		NewEnsurer(mgr, logger),
 		oscutils.NewUnitSerializer(),
 		kubelet.NewConfigCodec(fciCodec),
 		fciCodec,

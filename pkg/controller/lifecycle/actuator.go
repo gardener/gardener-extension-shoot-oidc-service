@@ -43,12 +43,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
@@ -65,10 +65,13 @@ const (
 var crdContent []byte
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(config config.Configuration, reader client.Reader) extension.Actuator {
+func NewActuator(mgr manager.Manager, clientset *kubernetes.Clientset, config config.Configuration) extension.Actuator {
 	return &actuator{
+		client:        mgr.GetClient(),
+		reader:        mgr.GetAPIReader(),
+		decoder:       serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		clientset:     clientset,
 		serviceConfig: config,
-		reader:        reader,
 	}
 }
 
@@ -303,30 +306,6 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	}
 
 	return a.Delete(ctx, log, ex)
-}
-
-// InjectConfig injects the rest config to this actuator.
-func (a *actuator) InjectConfig(config *rest.Config) error {
-	var err error
-
-	a.clientset, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		return fmt.Errorf("could not create Kubernetes client: %w", err)
-	}
-
-	return nil
-}
-
-// InjectClient injects the controller runtime client into the reconciler.
-func (a *actuator) InjectClient(client client.Client) error {
-	a.client = client
-	return nil
-}
-
-// InjectScheme injects the given scheme into the reconciler.
-func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
-	a.decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
-	return nil
 }
 
 func getLabels() map[string]string {

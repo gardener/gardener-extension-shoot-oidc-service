@@ -18,7 +18,9 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
+	mockmanager "github.com/gardener/gardener/pkg/mock/controller-runtime/manager"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -29,7 +31,6 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 )
@@ -44,6 +45,8 @@ var _ = Describe("Mutator", func() {
 	var (
 		ctx        = context.Background()
 		fakeClient client.Client
+		ctrl       *gomock.Controller
+		mgr        *mockmanager.MockManager
 
 		oidcAuthenticatorKubeConfigVolumeMount = corev1.VolumeMount{
 			Name:      oidcAuthenticatorKubeConfigVolumeName,
@@ -208,8 +211,10 @@ var _ = Describe("Mutator", func() {
 				},
 			}
 
-			ensurer = NewEnsurer(logger)
-			Expect(ensurer.(inject.Client).InjectClient(fakeClient)).To(Succeed())
+			ctrl = gomock.NewController(GinkgoT())
+			mgr = mockmanager.NewMockManager(ctrl)
+			mgr.EXPECT().GetClient().Return(fakeClient)
+			ensurer = NewEnsurer(mgr, logger)
 		})
 
 		It("should add missing flags to a kube-apiserver pod", func() {
