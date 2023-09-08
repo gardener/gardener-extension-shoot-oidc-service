@@ -15,7 +15,7 @@ if [[ ! -d "$repo_root/gardener" ]]; then
 fi
 
 cd "$repo_root/gardener"
-git checkout 1a7052b51f76c8f317be3dd8d91b420afdb611f3 # g/g v1.69.1
+git checkout 5c9bbe4526731f0dacf775ca887953ad80d7505c # g/g v1.75.0
 make kind-up
 export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
 make gardener-up
