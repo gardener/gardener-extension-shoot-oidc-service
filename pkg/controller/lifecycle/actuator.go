@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Masterminds/semver"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -26,12 +25,10 @@ import (
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/gardener/gardener/pkg/utils/retry"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
-	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -160,16 +157,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("secret %q not found", secrets.CAName)
 	}
 
-	k8sVersionInfo, err := a.clientset.Discovery().ServerVersion()
-	if err != nil {
-		return err
-	}
-
-	k8sVersion, err := semver.NewVersion(k8sVersionInfo.GitVersion)
-	if err != nil {
-		return err
-	}
-
 	seedResources, err := getSeedResources(
 		oidcReplicas,
 		hibernated,
@@ -177,7 +164,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
-		k8sVersion,
 	)
 	if err != nil {
 		return err
@@ -320,7 +306,7 @@ func getHighAvailabilityLabel() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string) (map[string][]byte, error) {
 	var (
 		port10443        = intstr.FromInt(10443)
 		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
@@ -508,7 +494,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	if oidcReplicas != nil && *oidcReplicas > 0 {
-		err = registry.Add(buildHPA(namespace, k8sVersion))
+		err = registry.Add(buildHPA(namespace))
 
 		if err != nil {
 			return nil, err
@@ -611,7 +597,7 @@ func buildPDB(namespace string) (client.Object, error) {
 	}, nil
 }
 
-func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
+func buildHPA(namespace string) *autoscalingv2.HorizontalPodAutoscaler {
 	var (
 		minReplicas, maxReplicas int32 = 1, 3
 		targetAverageUtilization int32 = 80
@@ -623,48 +609,25 @@ func buildHPA(namespace string, k8sVersion *semver.Version) client.Object {
 		}
 	)
 
-	if versionutils.ConstraintK8sGreaterEqual123.Check(k8sVersion) {
-		return &autoscalingv2.HorizontalPodAutoscaler{
-			ObjectMeta: objectMeta,
-			Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-				ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
-					APIVersion: appsv1.SchemeGroupVersion.String(),
-					Kind:       "Deployment",
-					Name:       constants.ApplicationName,
-				},
-				MinReplicas: &minReplicas,
-				MaxReplicas: maxReplicas,
-				Metrics: []autoscalingv2.MetricSpec{
-					{
-						Type: autoscalingv2.ResourceMetricSourceType,
-						Resource: &autoscalingv2.ResourceMetricSource{
-							Name: corev1.ResourceCPU,
-							Target: autoscalingv2.MetricTarget{
-								Type:               autoscalingv2.UtilizationMetricType,
-								AverageUtilization: &targetAverageUtilization,
-							},
-						},
-					},
-				},
-			},
-		}
-	}
-	return &autoscalingv2beta1.HorizontalPodAutoscaler{
+	return &autoscalingv2.HorizontalPodAutoscaler{
 		ObjectMeta: objectMeta,
-		Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
+		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 				APIVersion: appsv1.SchemeGroupVersion.String(),
 				Kind:       "Deployment",
 				Name:       constants.ApplicationName,
 			},
 			MinReplicas: &minReplicas,
 			MaxReplicas: maxReplicas,
-			Metrics: []autoscalingv2beta1.MetricSpec{
+			Metrics: []autoscalingv2.MetricSpec{
 				{
-					Type: autoscalingv2beta1.ResourceMetricSourceType,
-					Resource: &autoscalingv2beta1.ResourceMetricSource{
-						Name:                     corev1.ResourceCPU,
-						TargetAverageUtilization: &targetAverageUtilization,
+					Type: autoscalingv2.ResourceMetricSourceType,
+					Resource: &autoscalingv2.ResourceMetricSource{
+						Name: corev1.ResourceCPU,
+						Target: autoscalingv2.MetricTarget{
+							Type:               autoscalingv2.UtilizationMetricType,
+							AverageUtilization: &targetAverageUtilization,
+						},
 					},
 				},
 			},
