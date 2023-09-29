@@ -93,7 +93,7 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
 .PHONY: generate
 generate: $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(CONTROLLER_GEN) $(GOIMPORTS) $(GOIMPORTSREVISER) $(YQ)
 	@GO111MODULE=off hack/update-codegen.sh
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate-sequential.sh ./charts/... ./cmd/... ./pkg/... ./test/...
 	$(MAKE) format
 
 .PHONY: format
