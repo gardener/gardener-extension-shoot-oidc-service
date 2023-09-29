@@ -6,11 +6,11 @@ require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gardener/gardener v1.80.1
 	github.com/go-logr/logr v1.2.4
-	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.10
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
+	go.uber.org/mock v0.2.0
 	golang.org/x/tools v0.12.0
 	k8s.io/api v0.28.2
 	k8s.io/apimachinery v0.28.2
@@ -101,7 +101,6 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	go.uber.org/mock v0.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
