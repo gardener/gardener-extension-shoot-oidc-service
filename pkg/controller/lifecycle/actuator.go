@@ -39,7 +39,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/utils/clock"
@@ -62,12 +61,11 @@ const (
 var crdContent []byte
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(mgr manager.Manager, clientset *kubernetes.Clientset, config config.Configuration) extension.Actuator {
+func NewActuator(mgr manager.Manager, config config.Configuration) extension.Actuator {
 	return &actuator{
 		client:        mgr.GetClient(),
 		reader:        mgr.GetAPIReader(),
 		decoder:       serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
-		clientset:     clientset,
 		serviceConfig: config,
 	}
 }
@@ -75,7 +73,6 @@ func NewActuator(mgr manager.Manager, clientset *kubernetes.Clientset, config co
 type actuator struct {
 	client        client.Client
 	reader        client.Reader
-	clientset     kubernetes.Interface
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
 }

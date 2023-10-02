@@ -6,11 +6,9 @@ package lifecycle
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
-	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -42,13 +40,8 @@ type AddOptions struct {
 
 // AddToManager adds a OIDC Service Lifecycle controller to the given Controller Manager.
 func AddToManager(ctx context.Context, mgr manager.Manager) error {
-	clientset, err := kubernetes.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return fmt.Errorf("could not create Kubernetes client: %w", err)
-	}
-
 	return extension.Add(ctx, mgr, extension.AddArgs{
-		Actuator:          NewActuator(mgr, clientset, DefaultAddOptions.ServiceConfig.Configuration),
+		Actuator:          NewActuator(mgr, DefaultAddOptions.ServiceConfig.Configuration),
 		ControllerOptions: DefaultAddOptions.ControllerOptions,
 		Name:              Name,
 		FinalizerSuffix:   FinalizerSuffix,
