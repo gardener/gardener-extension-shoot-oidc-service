@@ -12,6 +12,7 @@
 !cmd/
 !example/
 !hack/
+!imagevector/
 !pkg/
 !test/
 !vendor/

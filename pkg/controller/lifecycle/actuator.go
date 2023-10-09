@@ -46,9 +46,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/gardener/gardener-extension-shoot-oidc-service/imagevector"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/imagevector"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
 )
 

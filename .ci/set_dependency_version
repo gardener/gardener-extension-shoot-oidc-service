@@ -4,4 +4,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set -e
+
 "$(dirname $0)"/../vendor/github.com/gardener/gardener/hack/.ci/set_dependency_version
