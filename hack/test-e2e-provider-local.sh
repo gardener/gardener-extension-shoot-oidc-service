@@ -14,8 +14,9 @@ if [[ ! -d "$repo_root/gardener" ]]; then
   git clone https://github.com/gardener/gardener.git
 fi
 
+gardener_version=$(go list -m -f '{{.Version}}' github.com/gardener/gardener)
 cd "$repo_root/gardener"
-git checkout 5bbabb82afa7f1b8ccb8281f05fed95323f04ce8 # g/g v1.80.1
+git checkout "$gardener_version"
 make kind-up
 export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
 make gardener-up
