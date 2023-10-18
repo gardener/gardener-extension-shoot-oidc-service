@@ -276,6 +276,11 @@ func (a *actuator) deleteSecret(ctx context.Context, name, namespace string) err
 	}))
 }
 
+// ForceDelete the Extension resource.
+func (a *actuator) ForceDelete(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	return a.Delete(ctx, log, ex)
+}
+
 // Restore the Extension resource.
 func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	return a.Reconcile(ctx, log, ex)
