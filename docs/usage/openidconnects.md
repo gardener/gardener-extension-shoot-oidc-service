@@ -63,8 +63,8 @@ spec:
   # - RS256
 
   # requiredClaims, if specified, causes the OIDCAuthenticator to verify that all the
-	# required claims key value pairs are present in the ID Token.
-	# requiredClaims:
+  # required claims key value pairs are present in the ID Token.
+  # requiredClaims:
   #   customclaim: requiredvalue
 
   # maxTokenExpirationSeconds if specified, sets a limit in seconds to the maximum validity duration of a token.
