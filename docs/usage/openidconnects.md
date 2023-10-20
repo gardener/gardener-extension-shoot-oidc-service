@@ -62,6 +62,11 @@ spec:
   # supportedSigningAlgs:
   # - RS256
 
+  # requiredClaims, if specified, causes the OIDCAuthenticator to verify that all the
+  # required claims key value pairs are present in the ID Token.
+  # requiredClaims:
+  #   customclaim: requiredvalue
+
   # maxTokenExpirationSeconds if specified, sets a limit in seconds to the maximum validity duration of a token.
   # Tokens issued with validity greater that this value will not be verified.
   # Setting this will require that the tokens have the "iat" and "exp" claims.
