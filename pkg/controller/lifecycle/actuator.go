@@ -220,6 +220,12 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 
 // Delete the Extension resource.
 func (a *actuator) Delete(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	return a.delete(ctx, log, ex, false)
+}
+
+// delete deletes the resources deployed for the extension.
+// It can be configured to skip deletion of the secretes managed by the SecretsManager.
+func (a *actuator) delete(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension, skipSecretsManagerSecrets bool) error {
 	namespace := ex.GetNamespace()
 	twoMinutes := 2 * time.Minute
 
@@ -259,6 +265,10 @@ func (a *actuator) Delete(ctx context.Context, log logr.Logger, ex *extensionsv1
 		return err
 	}
 
+	if skipSecretsManagerSecrets {
+		return nil
+	}
+
 	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, log.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, nil)
 	if err != nil {
 		return err
@@ -293,7 +303,9 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 		return err
 	}
 
-	return a.Delete(ctx, log, ex)
+	// SecretsManager secrets should not be deleted during migration in order to have the required ones
+	// persisted in the shootstate resource.
+	return a.delete(ctx, log, ex, true)
 }
 
 func getLabels() map[string]string {
