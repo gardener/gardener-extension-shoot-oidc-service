@@ -5,7 +5,7 @@ Gardener allows Shoot clusters to dynamically register OpenID Connect providers.
 
 ## Configuration
 
-To generally enable the OIDC service for shoot objects the `shoot-oidc-service` extension must be registered by providing an appropriate [extension registration](https://github.com/gardener/gardener-extension-shoot-oidc-service/blob/master/example/controller-registration.yaml) in the garden cluster.
+To generally enable the OIDC service for shoot objects the `shoot-oidc-service` extension must be registered by providing an appropriate [extension registration](../../example/controller-registration.yaml) in the garden cluster.
 
 Here it is possible to decide whether the extension should be always available for all shoots or whether the extension must be separately enabled per shoot.
 
