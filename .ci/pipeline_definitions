@@ -3,9 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 gardener-extension-shoot-oidc-service:
-  template: 'default'
   base_definition:
-    repo: ~
     traits:
       version:
         preprocess: 'inject-commit-hash'
@@ -16,7 +14,6 @@ gardener-extension-shoot-oidc-service:
         - linux/arm64
         dockerimages:
           gardener-extension-shoot-oidc-service:
-            registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/extensions/shoot-oidc-service'
             dockerfile: 'Dockerfile'
             target: gardener-extension-shoot-oidc-service
