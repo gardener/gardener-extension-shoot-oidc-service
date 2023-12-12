@@ -4,7 +4,7 @@
 
 ---
 image:
-  repository: eu.gcr.io/gardener-project/gardener/extensions/shoot-oidc-service
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/shoot-oidc-service
   tag: latest
   pullPolicy: IfNotPresent
 
