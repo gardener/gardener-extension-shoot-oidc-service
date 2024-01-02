@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -25,6 +26,7 @@ import (
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/gardener/gardener/pkg/utils/retry"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
+	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -39,10 +41,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -61,11 +65,12 @@ const (
 var crdContent []byte
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(mgr manager.Manager, config config.Configuration) extension.Actuator {
+func NewActuator(mgr manager.Manager, clientset kubernetes.Interface, config config.Configuration) extension.Actuator {
 	return &actuator{
 		client:        mgr.GetClient(),
 		reader:        mgr.GetAPIReader(),
 		decoder:       serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		clientset:     clientset,
 		serviceConfig: config,
 	}
 }
@@ -73,6 +78,7 @@ func NewActuator(mgr manager.Manager, config config.Configuration) extension.Act
 type actuator struct {
 	client        client.Client
 	reader        client.Reader
+	clientset     kubernetes.Interface
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
 }
@@ -154,6 +160,16 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("secret %q not found", secrets.CAName)
 	}
 
+	k8sVersionInfo, err := a.clientset.Discovery().ServerVersion()
+	if err != nil {
+		return err
+	}
+
+	k8sVersion, err := semver.NewVersion(k8sVersionInfo.GitVersion)
+	if err != nil {
+		return err
+	}
+
 	seedResources, err := getSeedResources(
 		oidcReplicas,
 		hibernated,
@@ -161,6 +177,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
+		k8sVersion,
 	)
 	if err != nil {
 		return err
@@ -320,7 +337,7 @@ func getHighAvailabilityLabel() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
 		port10443        = intstr.FromInt(10443)
 		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
@@ -360,12 +377,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		return nil, err
 	}
 
-	pdb, err := buildPDB(namespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate PodDisruptionBudget %v", err)
-	}
-
-	if err := registry.Add(pdb); err != nil {
+	if err := registry.Add(buildPDB(namespace, k8sVersion)); err != nil {
 		return nil, err
 	}
 
@@ -592,20 +604,26 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	return resources, nil
 }
 
-func buildPDB(namespace string) (client.Object, error) {
-	pdbMaxUnavailable := intstr.FromInt(1)
+func buildPDB(namespace string, k8sVersion *semver.Version) client.Object {
+	var (
+		pdb = &policyv1.PodDisruptionBudget{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ApplicationName,
+				Namespace: namespace,
+				Labels:    getLabels(),
+			},
+			Spec: policyv1.PodDisruptionBudgetSpec{
+				MaxUnavailable: ptr.To(intstr.FromInt(1)),
+				Selector:       &metav1.LabelSelector{MatchLabels: getLabels()},
+			},
+		}
+	)
 
-	return &policyv1.PodDisruptionBudget{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.ApplicationName,
-			Namespace: namespace,
-			Labels:    getLabels(),
-		},
-		Spec: policyv1.PodDisruptionBudgetSpec{
-			MaxUnavailable: &pdbMaxUnavailable,
-			Selector:       &metav1.LabelSelector{MatchLabels: getLabels()},
-		},
-	}, nil
+	if versionutils.ConstraintK8sGreaterEqual126.Check(k8sVersion) {
+		pdb.Spec.UnhealthyPodEvictionPolicy = ptr.To(policyv1.AlwaysAllow)
+	}
+
+	return pdb
 }
 
 func buildHPA(namespace string) *autoscalingv2.HorizontalPodAutoscaler {
