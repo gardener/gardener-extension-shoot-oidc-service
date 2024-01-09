@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-COMPONENT_PREFIXES="eu.gcr.io/gardener-project/gardener/oidc-webhook-authenticator" \
+COMPONENT_PREFIXES="europe-docker.pkg.dev/gardener-project/releases/gardener" \
     "$(dirname $0)"/../vendor/github.com/gardener/gardener/hack/.ci/component_descriptor "$(dirname $0)"/..
