@@ -121,3 +121,6 @@ test-e2e-local: $(KIND) $(YQ) $(GINKGO)
 .PHONY: oidc-up
 oidc-up: $(KIND) $(YQ)
 	@$(REPO_ROOT)/hack/oidc-up.sh
+
+.PHONY: tidy
+tidy: revendor
