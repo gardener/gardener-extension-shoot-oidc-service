@@ -4,7 +4,9 @@
 
 package kapiserver
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type noCASecretError struct{}
 
