@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+apiVersion: testmachinery.sapcloud.io
 kind: TestDefinition
 metadata:
   name: oidc-lifecycle
@@ -18,4 +19,5 @@ spec:
     --shoot-name=$SHOOT_NAME
     --project-namespace=$PROJECT_NAMESPACE
     --kubecfg="$TM_KUBECONFIG_PATH/gardener.config"
+
   image: golang:1.21.3
