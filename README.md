@@ -1,6 +1,6 @@
 # [Gardener Extension for openid connect services](https://gardener.cloud)
+[![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-shoot-oidc-service)](https://api.reuse.software/info/github.com/gardener/gardener-extension-shoot-oidc-service)
 
-[![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
 Project Gardener implements the automated management and operation of [Kubernetes](https://kubernetes.io/) clusters as a service.
 Its main principle is to leverage Kubernetes concepts for all of its tasks.
