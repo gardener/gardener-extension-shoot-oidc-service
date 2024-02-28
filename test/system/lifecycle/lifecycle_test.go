@@ -39,7 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
@@ -235,7 +235,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 	for i, e := range shoot.Spec.Extensions {
 		if e.Type == constants.ExtensionType {
 			if e.Disabled != nil && *e.Disabled == true {
-				shoot.Spec.Extensions[i].Disabled = pointer.Bool(false)
+				shoot.Spec.Extensions[i].Disabled = ptr.To(false)
 			}
 			return nil
 		}
@@ -243,7 +243,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 
 	shoot.Spec.Extensions = append(shoot.Spec.Extensions, gardencorev1beta1.Extension{
 		Type:     constants.ExtensionType,
-		Disabled: pointer.Bool(false),
+		Disabled: ptr.To(false),
 	})
 	return nil
 }
@@ -251,7 +251,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 func ensureOIDCServiceIsDisabled(shoot *gardencorev1beta1.Shoot) error {
 	for i, e := range shoot.Spec.Extensions {
 		if e.Type == constants.ExtensionType {
-			shoot.Spec.Extensions[i].Disabled = pointer.Bool(true)
+			shoot.Spec.Extensions[i].Disabled = ptr.To(true)
 			return nil
 		}
 	}

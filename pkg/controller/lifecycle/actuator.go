@@ -45,7 +45,6 @@ import (
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/utils/clock"
-	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -86,7 +85,7 @@ type actuator struct {
 func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hibernated bool) (*int32, error) {
 	// Scale to 0 if cluster is hibernated
 	if hibernated {
-		return pointer.Int32(0), nil
+		return ptr.To[int32](0), nil
 	}
 
 	oidcDeployment := &appsv1.Deployment{
@@ -105,7 +104,7 @@ func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hib
 		return &initialCount, nil
 	case err != nil:
 		// Error cannot be handled here so pass it to the caller function
-		return pointer.Int32(0), err
+		return ptr.To[int32](0), err
 	case oidcDeployment.Spec.Replicas != nil && *oidcDeployment.Spec.Replicas > 0:
 		// Do not interfere with hpa recommendations
 		return oidcDeployment.Spec.Replicas, nil
@@ -394,7 +393,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas:             oidcReplicas,
-			RevisionHistoryLimit: pointer.Int32(1),
+			RevisionHistoryLimit: ptr.To[int32](1),
 			Selector:             &metav1.LabelSelector{MatchLabels: getLabels()},
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
@@ -425,7 +424,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							}},
 						},
 					},
-					AutomountServiceAccountToken: pointer.Bool(false),
+					AutomountServiceAccountToken: ptr.To(false),
 					ServiceAccountName:           constants.ApplicationName,
 					PriorityClassName:            v1beta1constants.PriorityClassNameShootControlPlane300,
 					Containers: []corev1.Container{{
@@ -534,7 +533,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				Namespace: namespace,
 				Labels:    getLabels(),
 			},
-			AutomountServiceAccountToken: pointer.Bool(false),
+			AutomountServiceAccountToken: ptr.To(false),
 		},
 		oidcDeployment,
 		&corev1.Service{

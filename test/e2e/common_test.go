@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
@@ -58,19 +58,19 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 		},
 		Spec: gardencorev1beta1.ShootSpec{
 			Region:            "local",
-			SecretBindingName: pointer.String("local"),
+			SecretBindingName: ptr.To("local"),
 			CloudProfileName:  "local",
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.28.2",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
-					SerializeImagePulls: pointer.Bool(false),
-					RegistryPullQPS:     pointer.Int32(10),
-					RegistryBurst:       pointer.Int32(20),
+					SerializeImagePulls: ptr.To(false),
+					RegistryPullQPS:     ptr.To[int32](10),
+					RegistryBurst:       ptr.To[int32](20),
 				},
 				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
 			},
 			Networking: &gardencorev1beta1.Networking{
-				Type:           pointer.String("calico"),
+				Type:           ptr.To("calico"),
 				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"calico.networking.extensions.gardener.cloud/v1alpha1","kind":"NetworkConfig","typha":{"enabled":false},"backend":"none"}`)},
 			},
 			Provider: gardencorev1beta1.Provider{
@@ -95,7 +95,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 	for i, e := range shoot.Spec.Extensions {
 		if e.Type == constants.ExtensionType {
 			if e.Disabled != nil && *e.Disabled {
-				shoot.Spec.Extensions[i].Disabled = pointer.Bool(false)
+				shoot.Spec.Extensions[i].Disabled = ptr.To(false)
 			}
 			return nil
 		}
@@ -103,7 +103,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 
 	shoot.Spec.Extensions = append(shoot.Spec.Extensions, gardencorev1beta1.Extension{
 		Type:     constants.ExtensionType,
-		Disabled: pointer.Bool(false),
+		Disabled: ptr.To(false),
 	})
 	return nil
 }
@@ -111,7 +111,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 func ensureOIDCServiceIsDisabled(shoot *gardencorev1beta1.Shoot) error {
 	for i, e := range shoot.Spec.Extensions {
 		if e.Type == constants.ExtensionType {
-			shoot.Spec.Extensions[i].Disabled = pointer.Bool(true)
+			shoot.Spec.Extensions[i].Disabled = ptr.To(true)
 			return nil
 		}
 	}
