@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -132,7 +132,7 @@ func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container, caBun
 		Name: tokenValidatorSecretVolumeName,
 		VolumeSource: corev1.VolumeSource{
 			Projected: &corev1.ProjectedVolumeSource{
-				DefaultMode: pointer.Int32(420),
+				DefaultMode: ptr.To[int32](420),
 				Sources: []corev1.VolumeProjection{
 					{
 						Secret: &corev1.SecretProjection{

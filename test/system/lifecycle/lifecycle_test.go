@@ -22,9 +22,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
+	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,7 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
@@ -95,8 +97,14 @@ var _ = Describe("Shoot oidc service testing", func() {
 		}
 
 		By("Verify that PodDisruptionBudget is correctly configured")
+		seedk8sVersion, err := semver.NewVersion(f.SeedClient.Version())
+		Expect(err).NotTo(HaveOccurred())
+
 		Expect(f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcPDB), oidcPDB)).To(Succeed())
 		Expect(oidcPDB.Spec.MaxUnavailable).To(PointTo(Equal(intstr.FromInt(1))))
+		if versionutils.ConstraintK8sGreaterEqual126.Check(seedk8sVersion) {
+			Expect(oidcPDB.Spec.UnhealthyPodEvictionPolicy).To(PointTo(Equal(policyv1.AlwaysAllow)))
+		}
 
 		By("Check OIDC config")
 		oidConfig, err := getOIDConfig(ctx, f.SeedClient.RESTClient())
@@ -227,7 +235,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 	for i, e := range shoot.Spec.Extensions {
 		if e.Type == constants.ExtensionType {
 			if e.Disabled != nil && *e.Disabled == true {
-				shoot.Spec.Extensions[i].Disabled = pointer.Bool(false)
+				shoot.Spec.Extensions[i].Disabled = ptr.To(false)
 			}
 			return nil
 		}
@@ -235,7 +243,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 
 	shoot.Spec.Extensions = append(shoot.Spec.Extensions, gardencorev1beta1.Extension{
 		Type:     constants.ExtensionType,
-		Disabled: pointer.Bool(false),
+		Disabled: ptr.To(false),
 	})
 	return nil
 }
@@ -243,7 +251,7 @@ func ensureOIDCServiceIsEnabled(shoot *gardencorev1beta1.Shoot) error {
 func ensureOIDCServiceIsDisabled(shoot *gardencorev1beta1.Shoot) error {
 	for i, e := range shoot.Spec.Extensions {
 		if e.Type == constants.ExtensionType {
-			shoot.Spec.Extensions[i].Disabled = pointer.Bool(true)
+			shoot.Spec.Extensions[i].Disabled = ptr.To(true)
 			return nil
 		}
 	}
