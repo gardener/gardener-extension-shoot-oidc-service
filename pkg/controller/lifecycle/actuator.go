@@ -32,6 +32,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -130,8 +131,9 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
+	// TODO: remove this in a future version
 	tokenValidatorShootAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.TokenValidator, namespace)
-	if err := tokenValidatorShootAccessSecret.Reconcile(ctx, a.client); err != nil {
+	if err := client.IgnoreNotFound(a.client.Delete(ctx, tokenValidatorShootAccessSecret.Secret)); err != nil {
 		return err
 	}
 
@@ -186,7 +188,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		caBundleSecret.Data[secretutils.DataKeyCertificateBundle],
 		namespace,
 		oidcShootAccessSecret.ServiceAccountName,
-		tokenValidatorShootAccessSecret.ServiceAccountName,
 	)
 	if err != nil {
 		return err
@@ -338,7 +339,8 @@ func getHighAvailabilityLabel() map[string]string {
 
 func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
-		port10443        = intstr.FromInt(10443)
+		int10443         = int32(10443)
+		port10443        = intstr.FromInt32(int10443)
 		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
 		requestCPU, _    = resource.ParseQuantity("50m")
 		limitCPU, _      = resource.ParseQuantity("1")
@@ -364,10 +366,8 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		}},
 		CurrentContext: constants.ApplicationName,
 		AuthInfos: []configv1.NamedAuthInfo{{
-			Name: constants.ApplicationName,
-			AuthInfo: configv1.AuthInfo{
-				TokenFile: constants.TokenValidatorDir + "/token",
-			},
+			Name:     constants.ApplicationName,
+			AuthInfo: configv1.AuthInfo{},
 		}},
 	}
 
@@ -433,12 +433,8 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Args: []string{
 							"--kubeconfig=" + gutil.PathGenericKubeconfig,
-							"--authentication-kubeconfig=" + gutil.PathGenericKubeconfig,
-							"--authorization-kubeconfig=" + gutil.PathGenericKubeconfig,
 							fmt.Sprintf("--tls-cert-file=%s/tls.crt", constants.WebhookTLSCertDir),
 							fmt.Sprintf("--tls-private-key-file=%s/tls.key", constants.WebhookTLSCertDir),
-							"--authorization-always-allow-paths=\"/webhooks/validating\"",
-							// fmt.Sprintf("--api-audiences=oidc-webhook-authenticator-%s", namespace),
 							"--v=2",
 						},
 						ReadinessProbe: &corev1.Probe{
@@ -526,6 +522,38 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		}
 	}
 
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        constants.ApplicationName,
+			Namespace:   namespace,
+			Labels:      getLabels(),
+			Annotations: map[string]string{},
+		},
+		Spec: corev1.ServiceSpec{
+			Type:     corev1.ServiceTypeClusterIP,
+			Selector: getLabels(),
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "https",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       443,
+					TargetPort: port10443,
+				},
+			},
+		},
+	}
+
+	metricsPort := networkingv1.NetworkPolicyPort{
+		Port:     utils.IntStrPtrFromInt32(int10443),
+		Protocol: ptr.To(corev1.ProtocolTCP),
+	}
+	if err := gutil.InjectNetworkPolicyAnnotationsForScrapeTargets(service, metricsPort); err != nil {
+		return nil, err
+	}
+	if err := gutil.InjectNetworkPolicyAnnotationsForWebhookTargets(service, metricsPort); err != nil {
+		return nil, err
+	}
+
 	resources, err := registry.AddAllAndSerialize(
 		&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
@@ -536,29 +564,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 			AutomountServiceAccountToken: ptr.To(false),
 		},
 		oidcDeployment,
-		&corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName,
-				Namespace: namespace,
-				Labels:    getLabels(),
-				Annotations: map[string]string{
-					"networking.resources.gardener.cloud/from-" + v1beta1constants.LabelNetworkPolicyScrapeTargets + "-to-ports": `[{"protocol":"TCP","port":10443}]`,
-					"networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports":                                 `[{"protocol":"TCP","port":10443}]`,
-				},
-			},
-			Spec: corev1.ServiceSpec{
-				Type:     corev1.ServiceTypeClusterIP,
-				Selector: getLabels(),
-				Ports: []corev1.ServicePort{
-					{
-						Name:       "https",
-						Protocol:   corev1.ProtocolTCP,
-						Port:       443,
-						TargetPort: port10443,
-					},
-				},
-			},
-		},
+		service,
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.ApplicationName + "-monitoring",
@@ -569,9 +575,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				v1beta1constants.PrometheusConfigMapScrapeConfig: `- job_name: ` + constants.ApplicationName + `
   scheme: https
   metrics_path: /metrics
-  authorization:
-    type: Bearer
-    credentials_file: /var/run/secrets/gardener.cloud/shoot/token/token
   tls_config:
     insecure_skip_verify: true
   honor_labels: false
@@ -663,7 +666,7 @@ func buildHPA(namespace string) *autoscalingv2.HorizontalPodAutoscaler {
 	}
 }
 
-func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName, tokenValidatorServiceAccountName string) (map[string][]byte, error) {
+func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName string) (map[string][]byte, error) {
 	failPolicy := admissionregistration.Fail
 	sideEffectClass := admissionregistration.SideEffectClassNone
 	validatingWebhookURL := fmt.Sprintf("https://%s.%s/webhooks/validating", constants.ApplicationName, namespace)
@@ -702,69 +705,12 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 				},
 			},
 		},
-		&rbacv1.ClusterRole{
+		&corev1.ServiceAccount{
+			// TODO: remove this in a future release
+			// take over this service account via the shoot managed resource so that it can be cleaned up
 			ObjectMeta: metav1.ObjectMeta{
-				Name: constants.TokenValidator,
-			},
-			Rules: []rbacv1.PolicyRule{
-				{
-					Verbs:           []string{"post"},
-					NonResourceURLs: []string{"/validate-token"},
-				},
-			},
-		},
-		&rbacv1.ClusterRoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: constants.TokenValidator,
-			},
-			RoleRef: rbacv1.RoleRef{
-				APIGroup: "rbac.authorization.k8s.io",
-				Kind:     "ClusterRole",
-				Name:     constants.TokenValidator,
-			},
-			Subjects: []rbacv1.Subject{
-				{
-					Kind:      rbacv1.ServiceAccountKind,
-					Name:      tokenValidatorServiceAccountName,
-					Namespace: metav1.NamespaceSystem,
-				},
-			},
-		},
-		&rbacv1.ClusterRoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   constants.AuthDelegator,
-				Labels: getLabels(),
-			},
-			RoleRef: rbacv1.RoleRef{
-				APIGroup: "rbac.authorization.k8s.io",
-				Kind:     "ClusterRole",
-				Name:     "system:auth-delegator",
-			},
-			Subjects: []rbacv1.Subject{
-				{
-					Kind:      rbacv1.ServiceAccountKind,
-					Name:      shootAccessServiceAccountName,
-					Namespace: metav1.NamespaceSystem,
-				},
-			},
-		},
-		&rbacv1.RoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ExtensionAuthReader,
-				Namespace: metav1.NamespaceSystem,
-				Labels:    getLabels(),
-			},
-			RoleRef: rbacv1.RoleRef{
-				APIGroup: "rbac.authorization.k8s.io",
-				Kind:     "Role",
-				Name:     "extension-apiserver-authentication-reader",
-			},
-			Subjects: []rbacv1.Subject{
-				{
-					Kind:      rbacv1.ServiceAccountKind,
-					Name:      shootAccessServiceAccountName,
-					Namespace: metav1.NamespaceSystem,
-				},
+				Namespace: "kube-system",
+				Name:      constants.TokenValidator,
 			},
 		},
 		&admissionregistration.ValidatingWebhookConfiguration{

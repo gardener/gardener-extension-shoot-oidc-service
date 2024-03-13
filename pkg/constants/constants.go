@@ -30,10 +30,6 @@ const (
 	WebhookKubeConfigSecretName = ApplicationName + "-kubeconfig"
 	// OIDCResourceReader is the name of the RBAC resources created in the shoot cluster that allow reading authentication.gardener.cloud.openidconnects.
 	OIDCResourceReader = ApplicationName + "-resource-reader"
-	// AuthDelegator is used to name the cluster role binding used for binding to "system:auth-delegator" cluster role in the shoot cluster.
-	AuthDelegator = ApplicationName + "-auth-delegator"
-	// ExtensionAuthReader is used to name the role binding used for binding to "extension-apiserver-authentication-reader" role in the kube-system namespace in the shoot cluster.
-	ExtensionAuthReader = ApplicationName + "-authentication-reader"
 	// TokenValidator is used to name the resources used to allow the kube-apiserver to validate tokens against the oidc authenticator.
 	TokenValidator = ApplicationName + "-token-validator"
 	// TokenValidatorDir is the path were the token-validator related secrets are mounted in the kube-apiserver pod.
