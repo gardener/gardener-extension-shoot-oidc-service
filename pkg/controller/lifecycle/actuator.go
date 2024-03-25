@@ -461,6 +461,10 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							PeriodSeconds:       20,
 							FailureThreshold:    3,
 						},
+						Env: []corev1.EnvVar{
+							{Name: "GOMAXPROCS", Value: "1"},      // in sync with the CPU limits
+							{Name: "GOMEMLIMIT", Value: "920MiB"}, // roughly 90% of 1Gi
+						},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    requestCPU,
