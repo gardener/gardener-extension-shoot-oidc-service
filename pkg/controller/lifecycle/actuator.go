@@ -345,7 +345,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		requestCPU, _    = resource.ParseQuantity("50m")
 		limitCPU, _      = resource.ParseQuantity("1")
 		requestMemory, _ = resource.ParseQuantity("64Mi")
-		limitMemory, _   = resource.ParseQuantity("256Mi")
+		limitMemory, _   = resource.ParseQuantity("1Gi")
 	)
 
 	kubeConfig := &configv1.Config{
