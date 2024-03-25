@@ -15,7 +15,6 @@ import (
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/go-logr/logr"
@@ -25,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
@@ -47,6 +47,8 @@ type ensurer struct {
 // NewSecretsManager is an alias for extensionssecretsmanager.SecretsManagerForCluster.
 // exposed for testing
 var NewSecretsManager = extensionssecretsmanager.SecretsManagerForCluster
+
+const fakeTokenSecretName = constants.ApplicationName + "-fake-token"
 
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the oidc-webhook-authenticator requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, new, _ *appsv1.Deployment) error {
@@ -85,9 +87,20 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return err
 		}
 
+		// TODO: remove code & delete the secret in a future release
+		// leave a fake token so that the kube-apiserver can start
+		// this is needed because the extension is reconciliated after the kube-apiserver and the old config still references a token path
+		fakeSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: fakeTokenSecretName, Namespace: new.Namespace}}
+		_, err = controllerutil.CreateOrUpdate(ctx, e.client, fakeSecret, func() error {
+			fakeSecret.Data = map[string][]byte{
+				"token": []byte("fake"),
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
 		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)
-		// TODO: This label approach is deprecated and no longer needed in the future. Remove it as soon as gardener/gardener@v1.75 has been released.
-		metav1.SetMetaDataLabel(&new.Spec.Template.ObjectMeta, gutil.NetworkPolicyLabel(constants.ApplicationName, 10443), v1beta1constants.LabelNetworkPolicyAllowed)
 	}
 
 	return nil
@@ -144,13 +157,14 @@ func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container, caBun
 							},
 						},
 					},
+					// TODO: remove in a future release
 					{
 						Secret: &corev1.SecretProjection{
 							Items: []corev1.KeyToPath{
 								{Key: "token", Path: "token"},
 							},
 							LocalObjectReference: corev1.LocalObjectReference{
-								Name: gutil.SecretNamePrefixShootAccess + constants.ApplicationName + "-token-validator",
+								Name: fakeTokenSecretName,
 							},
 						},
 					},

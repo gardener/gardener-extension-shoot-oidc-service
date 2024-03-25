@@ -88,7 +88,7 @@ var _ = Describe("Mutator", func() {
 									{Key: "token", Path: "token"},
 								},
 								LocalObjectReference: corev1.LocalObjectReference{
-									Name: gutil.SecretNamePrefixShootAccess + constants.ApplicationName + "-token-validator",
+									Name: "oidc-webhook-authenticator-fake-token",
 								},
 							},
 						},
@@ -110,8 +110,6 @@ var _ = Describe("Mutator", func() {
 
 			Expect(c.VolumeMounts).To(ContainElement(tokenValidatorSecretVolumeMount))
 			Expect(deployment.Spec.Template.Spec.Volumes).To(ContainElement(tokenValidatorSecretVolume))
-
-			Expect(deployment.Spec.Template.Labels).To(HaveKeyWithValue("networking.resources.gardener.cloud/to-oidc-webhook-authenticator-tcp-10443", "allowed"))
 		}
 		checkDeploymentIsNotMutated = func(deployment *appsv1.Deployment) {
 			// Check that the kube-apiserver container still exists

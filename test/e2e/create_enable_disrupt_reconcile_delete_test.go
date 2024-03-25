@@ -56,7 +56,7 @@ var _ = Describe("OIDC Extension Tests", Label("OIDC"), func() {
 		}, time.Minute*2, time.Second*2).Should(Succeed())
 		Expect(seedClient.Client().Delete(ctx, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "shoot-access-oidc-webhook-authenticator-token-validator",
+				Name:      "oidc-webhook-authenticator-kubeconfig",
 				Namespace: shootSeedNamespace,
 			},
 		}, &client.DeleteOptions{})).To(Succeed())
