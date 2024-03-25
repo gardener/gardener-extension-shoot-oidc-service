@@ -33,7 +33,7 @@ func NewServiceControllerCommand() *cobra.Command {
 		Short:         "OIDC Service Controller manages components which provide openid connect authentication services.",
 		SilenceErrors: true,
 
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
 
 			if err := options.optionAggregator.Complete(); err != nil {
