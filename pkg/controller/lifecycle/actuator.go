@@ -339,13 +339,17 @@ func getHighAvailabilityLabel() map[string]string {
 
 func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
-		int10443         = int32(10443)
-		port10443        = intstr.FromInt32(int10443)
-		registry         = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
-		requestCPU, _    = resource.ParseQuantity("50m")
-		limitCPU, _      = resource.ParseQuantity("1")
-		requestMemory, _ = resource.ParseQuantity("64Mi")
-		limitMemory, _   = resource.ParseQuantity("256Mi")
+		int10443      = int32(10443)
+		port10443     = intstr.FromInt32(int10443)
+		registry      = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
+		requestCPU    = resource.MustParse("50m")
+		requestMemory = resource.MustParse("64Mi")
+		// Keep in sync with GOMAXPROCS env variable set to the OWA container
+		// If cpu limit is > 1 round up GOMAXPROCS and set it to 1 otherwise
+		limitCPU = resource.MustParse("1")
+		// Keep in sync with GOMEMLIMIT env variable set to the OWA container.
+		// GOMEMLIMIT should be around 80-90% of the memory limit
+		limitMemory = resource.MustParse("1Gi")
 	)
 
 	kubeConfig := &configv1.Config{
@@ -460,6 +464,10 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							InitialDelaySeconds: 10,
 							PeriodSeconds:       20,
 							FailureThreshold:    3,
+						},
+						Env: []corev1.EnvVar{
+							{Name: "GOMAXPROCS", Value: "1"},      // in sync with the CPU limits
+							{Name: "GOMEMLIMIT", Value: "920MiB"}, // roughly 90% of 1Gi
 						},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
