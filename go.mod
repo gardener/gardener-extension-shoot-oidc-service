@@ -1,6 +1,7 @@
 module github.com/gardener/gardener-extension-shoot-oidc-service
 
-go 1.22.1
+go 1.22.2
+
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
