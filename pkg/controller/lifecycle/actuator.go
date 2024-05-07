@@ -19,6 +19,7 @@ import (
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	gardenerkubernetes "github.com/gardener/gardener/pkg/client/kubernetes"
 	kubeapiserverconstants "github.com/gardener/gardener/pkg/component/kubernetes/apiserver/constants"
+	monitoringutils "github.com/gardener/gardener/pkg/component/observability/monitoring/utils"
 	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
@@ -28,6 +29,7 @@ import (
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -179,6 +181,8 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
 		k8sVersion,
+		// TODO(rfranzke): Delete this after August 2024.
+		a.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: ex.Namespace}, &appsv1.StatefulSet{}) == nil,
 	)
 	if err != nil {
 		return err
@@ -337,7 +341,7 @@ func getHighAvailabilityLabel() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version, gep19Monitoring bool) (map[string][]byte, error) {
 	var (
 		int10443      = int32(10443)
 		port10443     = intstr.FromInt32(int10443)
@@ -562,18 +566,13 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		return nil, err
 	}
 
-	resources, err := registry.AddAllAndSerialize(
-		&corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName,
-				Namespace: namespace,
-				Labels:    getLabels(),
-			},
-			AutomountServiceAccountToken: ptr.To(false),
-		},
-		oidcDeployment,
-		service,
-		&corev1.ConfigMap{
+	var (
+		legacyObservabilityConfigMap *corev1.ConfigMap
+		serviceMonitor               *monitoringv1.ServiceMonitor
+	)
+
+	if !gep19Monitoring {
+		legacyObservabilityConfigMap = &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.ApplicationName + "-monitoring",
 				Namespace: namespace,
@@ -604,7 +603,36 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
     action: keep
 `,
 			},
+		}
+	} else {
+		serviceMonitor = &monitoringv1.ServiceMonitor{
+			ObjectMeta: monitoringutils.ConfigObjectMeta(constants.ApplicationName, namespace, "shoot"),
+			Spec: monitoringv1.ServiceMonitorSpec{
+				Selector: metav1.LabelSelector{MatchLabels: getLabels()},
+				Endpoints: []monitoringv1.Endpoint{{
+					Port:                 "https",
+					Scheme:               "HTTPS",
+					HonorLabels:          false,
+					TLSConfig:            &monitoringv1.TLSConfig{SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: true}},
+					MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("oidc_webhook_authenticator_.+"),
+				}},
+			},
+		}
+	}
+
+	resources, err := registry.AddAllAndSerialize(
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ApplicationName,
+				Namespace: namespace,
+				Labels:    getLabels(),
+			},
+			AutomountServiceAccountToken: ptr.To(false),
 		},
+		oidcDeployment,
+		service,
+		legacyObservabilityConfigMap,
+		serviceMonitor,
 	)
 
 	if err != nil {
