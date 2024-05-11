@@ -346,8 +346,8 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		int10443      = int32(10443)
 		port10443     = intstr.FromInt32(int10443)
 		registry      = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
-		requestCPU    = resource.MustParse("50m")
-		requestMemory = resource.MustParse("64Mi")
+		requestCPU    = resource.MustParse("10m")
+		requestMemory = resource.MustParse("32Mi")
 		// Keep in sync with GOMAXPROCS env variable set to the OWA container
 		// If cpu limit is > 1 round up GOMAXPROCS and set it to 1 otherwise
 		limitCPU = resource.MustParse("1")
