@@ -556,7 +556,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 	}
 
 	metricsPort := networkingv1.NetworkPolicyPort{
-		Port:     utils.IntStrPtrFromInt32(int10443),
+		Port:     ptr.To(intstr.FromInt32(int10443)),
 		Protocol: ptr.To(corev1.ProtocolTCP),
 	}
 	if err := gutil.InjectNetworkPolicyAnnotationsForScrapeTargets(service, metricsPort); err != nil {
