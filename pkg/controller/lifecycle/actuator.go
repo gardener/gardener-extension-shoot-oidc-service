@@ -611,7 +611,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				Selector: metav1.LabelSelector{MatchLabels: getLabels()},
 				Endpoints: []monitoringv1.Endpoint{{
 					Port:                 "https",
-					Scheme:               "HTTPS",
+					Scheme:               "https",
 					HonorLabels:          false,
 					TLSConfig:            &monitoringv1.TLSConfig{SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: true}},
 					MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("oidc_webhook_authenticator_.+"),
