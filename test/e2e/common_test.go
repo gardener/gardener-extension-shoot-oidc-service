@@ -70,6 +70,7 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			},
 			Networking: &gardencorev1beta1.Networking{
 				Type:           ptr.To("calico"),
+				Nodes:          ptr.To("10.10.0.0/16"),
 				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"calico.networking.extensions.gardener.cloud/v1alpha1","kind":"NetworkConfig","typha":{"enabled":false},"backend":"none"}`)},
 			},
 			Provider: gardencorev1beta1.Provider{
