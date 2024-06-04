@@ -613,7 +613,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 					Port:                 "https",
 					Scheme:               "https",
 					HonorLabels:          false,
-					TLSConfig:            &monitoringv1.TLSConfig{SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: true}},
+					TLSConfig:            &monitoringv1.TLSConfig{SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)}},
 					MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("oidc_webhook_authenticator_.+"),
 				}},
 			},

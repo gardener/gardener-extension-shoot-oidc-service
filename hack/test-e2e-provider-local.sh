@@ -9,13 +9,16 @@ set -o pipefail
 set -o errexit
 
 repo_root="$(readlink -f $(dirname ${0})/..)"
+gardener_version=$(go list -m -f '{{.Version}}' github.com/gardener/gardener)
 
 if [[ ! -d "$repo_root/gardener" ]]; then
   git clone https://github.com/gardener/gardener.git
+  cd "$repo_root/gardener"
+else
+  cd "$repo_root/gardener"
+  git fetch
 fi
 
-gardener_version=$(go list -m -f '{{.Version}}' github.com/gardener/gardener)
-cd "$repo_root/gardener"
 git checkout "$gardener_version"
 make kind-up
 export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
@@ -29,8 +32,8 @@ kind load docker-image shoot-oidc-service-local:$version --name gardener-local
 
 mkdir -p $repo_root/tmp
 cp -f $repo_root/example/controller-registration.yaml $repo_root/tmp/controller-registration.yaml
-yq -i e "(select (.providerConfig.values.image) | .providerConfig.values.image.tag) |= \"$version\"" $repo_root/tmp/controller-registration.yaml
-yq -i e '(select (.providerConfig.values.image) | .providerConfig.values.image.repository) |= "docker.io/library/shoot-oidc-service-local"' $repo_root/tmp/controller-registration.yaml
+yq -i e "(select (.helm.values.image) | .helm.values.image.tag) |= \"$version\"" $repo_root/tmp/controller-registration.yaml
+yq -i e '(select (.helm.values.image) | .helm.values.image.repository) |= "docker.io/library/shoot-oidc-service-local"' $repo_root/tmp/controller-registration.yaml
 
 kubectl apply -f "$repo_root/tmp/controller-registration.yaml"
 
