@@ -56,12 +56,12 @@ import (
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/webhook/kapiserver"
 )
 
 const (
 	// ActuatorName is the name of the OIDC Service actuator.
-	ActuatorName = constants.ServiceName + "-actuator"
+	ActuatorName        = constants.ServiceName + "-actuator"
+	fakeTokenSecretName = constants.ApplicationName + "-fake-token" // <- TODO: remove this constant in a future release
 )
 
 //go:embed templates/authentication.gardener.cloud_openidconnects.yaml
@@ -177,7 +177,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
 		k8sVersion,
 		// TODO(rfranzke): Delete this after August 2024.
-		a.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: ex.Namespace}, &appsv1.StatefulSet{}) == nil,
+		a.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: namespace}, &appsv1.StatefulSet{}) == nil,
 	)
 	if err != nil {
 		return err
@@ -232,7 +232,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 	}
 
 	// TODO: remove this in a future release
-	if err := a.deleteSecret(ctx, kapiserver.FakeTokenSecretName, ex.Namespace); err != nil {
+	if err := a.deleteSecret(ctx, fakeTokenSecretName, namespace); err != nil {
 		return err
 	}
 
@@ -273,11 +273,9 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, ex *extensionsv1
 	}
 
 	for _, name := range []string{
-		// TODO: remove this in a future version
-		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
+		gutil.SecretNamePrefixShootAccess + constants.TokenValidator, // <- TODO: remove the secret name in a future version
 		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
-		// TODO: remove this in a future release
-		kapiserver.FakeTokenSecretName,
+		fakeTokenSecretName, // <- TODO: remove the secret name in a future release
 	} {
 		if err := a.deleteSecret(ctx, name, namespace); err != nil {
 			return err

@@ -47,8 +47,6 @@ type ensurer struct {
 // exposed for testing
 var NewSecretsManager = extensionssecretsmanager.SecretsManagerForCluster
 
-const FakeTokenSecretName = constants.ApplicationName + "-fake-token"
-
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the oidc-webhook-authenticator requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, new, _ *appsv1.Deployment) error {
 	template := &new.Spec.Template
