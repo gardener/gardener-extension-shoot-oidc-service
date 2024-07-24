@@ -56,6 +56,7 @@ import (
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/webhook/kapiserver"
 )
 
 const (
@@ -130,12 +131,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 
 	oidcShootAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.ApplicationName, namespace)
 	if err := oidcShootAccessSecret.Reconcile(ctx, a.client); err != nil {
-		return err
-	}
-
-	// TODO: remove this in a future version
-	tokenValidatorShootAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.TokenValidator, namespace)
-	if err := client.IgnoreNotFound(a.client.Delete(ctx, tokenValidatorShootAccessSecret.Secret)); err != nil {
 		return err
 	}
 
@@ -236,6 +231,11 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
+	// TODO: remove this in a future release
+	if err := a.deleteSecret(ctx, kapiserver.FakeTokenSecretName, ex.Namespace); err != nil {
+		return err
+	}
+
 	return secretsManager.Cleanup(ctx)
 }
 
@@ -273,8 +273,11 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, ex *extensionsv1
 	}
 
 	for _, name := range []string{
+		// TODO: remove this in a future version
 		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
 		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
+		// TODO: remove this in a future release
+		kapiserver.FakeTokenSecretName,
 	} {
 		if err := a.deleteSecret(ctx, name, namespace); err != nil {
 			return err
@@ -710,7 +713,6 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 	shootRegistry := managedresources.NewRegistry(gardenerkubernetes.ShootScheme, gardenerkubernetes.ShootCodec, gardenerkubernetes.ShootSerializer)
 	shootResources, err := shootRegistry.AddAllAndSerialize(
 		&rbacv1.ClusterRole{
-			// TODO add more descriptive labels to resources
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   constants.OIDCResourceReader,
 				Labels: getLabels(),
@@ -739,14 +741,6 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 					Name:      shootAccessServiceAccountName,
 					Namespace: metav1.NamespaceSystem,
 				},
-			},
-		},
-		&corev1.ServiceAccount{
-			// TODO: remove this in a future release
-			// take over this service account via the shoot managed resource so that it can be cleaned up
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "kube-system",
-				Name:      constants.TokenValidator,
 			},
 		},
 		&admissionregistration.ValidatingWebhookConfiguration{
