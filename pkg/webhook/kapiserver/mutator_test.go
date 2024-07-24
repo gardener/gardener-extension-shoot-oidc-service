@@ -28,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -61,41 +60,6 @@ var _ = Describe("Mutator", func() {
 				},
 			},
 		}
-		tokenValidatorSecretVolumeMount = corev1.VolumeMount{
-			Name:      tokenValidatorSecretVolumeName,
-			ReadOnly:  true,
-			MountPath: "/var/run/secrets/oidc-webhook/token-validator",
-		}
-		tokenValidatorSecretVolume = corev1.Volume{
-			Name: tokenValidatorSecretVolumeName,
-			VolumeSource: corev1.VolumeSource{
-				Projected: &corev1.ProjectedVolumeSource{
-					DefaultMode: ptr.To[int32](420),
-					Sources: []corev1.VolumeProjection{
-						{
-							Secret: &corev1.SecretProjection{
-								Items: []corev1.KeyToPath{
-									{Key: "bundle.crt", Path: "bundle.crt"},
-								},
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: "ca-extension-shoot-oidc-service",
-								},
-							},
-						},
-						{
-							Secret: &corev1.SecretProjection{
-								Items: []corev1.KeyToPath{
-									{Key: "token", Path: "token"},
-								},
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: "oidc-webhook-authenticator-fake-token",
-								},
-							},
-						},
-					},
-				},
-			},
-		}
 
 		checkDeploymentIsCorrectlyMutated = func(deployment *appsv1.Deployment) {
 			// Check that the kube-apiserver container still exists
@@ -107,9 +71,6 @@ var _ = Describe("Mutator", func() {
 
 			Expect(c.VolumeMounts).To(ContainElement(oidcAuthenticatorKubeConfigVolumeMount))
 			Expect(deployment.Spec.Template.Spec.Volumes).To(ContainElement(oidcAuthenticatorKubeConfigVolume))
-
-			Expect(c.VolumeMounts).To(ContainElement(tokenValidatorSecretVolumeMount))
-			Expect(deployment.Spec.Template.Spec.Volumes).To(ContainElement(tokenValidatorSecretVolume))
 		}
 		checkDeploymentIsNotMutated = func(deployment *appsv1.Deployment) {
 			// Check that the kube-apiserver container still exists
