@@ -60,7 +60,8 @@ import (
 
 const (
 	// ActuatorName is the name of the OIDC Service actuator.
-	ActuatorName = constants.ServiceName + "-actuator"
+	ActuatorName        = constants.ServiceName + "-actuator"
+	fakeTokenSecretName = constants.ApplicationName + "-fake-token" // <- TODO: remove this constant in a future release
 )
 
 //go:embed templates/authentication.gardener.cloud_openidconnects.yaml
@@ -133,12 +134,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	// TODO: remove this in a future version
-	tokenValidatorShootAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.TokenValidator, namespace)
-	if err := client.IgnoreNotFound(a.client.Delete(ctx, tokenValidatorShootAccessSecret.Secret)); err != nil {
-		return err
-	}
-
 	hibernated := controller.IsHibernationEnabled(cluster)
 	oidcReplicas, err := getOIDCReplicas(ctx, a.client, namespace, hibernated)
 	if err != nil {
@@ -182,7 +177,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
 		k8sVersion,
 		// TODO(rfranzke): Delete this after August 2024.
-		a.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: ex.Namespace}, &appsv1.StatefulSet{}) == nil,
+		a.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: namespace}, &appsv1.StatefulSet{}) == nil,
 	)
 	if err != nil {
 		return err
@@ -236,6 +231,11 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
+	// TODO: remove this in a future release
+	if err := a.deleteSecret(ctx, fakeTokenSecretName, namespace); err != nil {
+		return err
+	}
+
 	return secretsManager.Cleanup(ctx)
 }
 
@@ -273,8 +273,9 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, ex *extensionsv1
 	}
 
 	for _, name := range []string{
-		gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
+		gutil.SecretNamePrefixShootAccess + constants.TokenValidator, // <- TODO: remove the secret name in a future version
 		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
+		fakeTokenSecretName, // <- TODO: remove the secret name in a future release
 	} {
 		if err := a.deleteSecret(ctx, name, namespace); err != nil {
 			return err
@@ -710,7 +711,6 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 	shootRegistry := managedresources.NewRegistry(gardenerkubernetes.ShootScheme, gardenerkubernetes.ShootCodec, gardenerkubernetes.ShootSerializer)
 	shootResources, err := shootRegistry.AddAllAndSerialize(
 		&rbacv1.ClusterRole{
-			// TODO add more descriptive labels to resources
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   constants.OIDCResourceReader,
 				Labels: getLabels(),
@@ -739,14 +739,6 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 					Name:      shootAccessServiceAccountName,
 					Namespace: metav1.NamespaceSystem,
 				},
-			},
-		},
-		&corev1.ServiceAccount{
-			// TODO: remove this in a future release
-			// take over this service account via the shoot managed resource so that it can be cleaned up
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "kube-system",
-				Name:      constants.TokenValidator,
 			},
 		},
 		&admissionregistration.ValidatingWebhookConfiguration{
