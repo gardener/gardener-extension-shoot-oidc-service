@@ -56,6 +56,13 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Path:              "oidc",
 		Webhook:           &admission.Webhook{Handler: handler},
 		NamespaceSelector: namespaceSelector,
+		ObjectSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"gardener.cloud/role": "controlplane",
+				"app":                 "kubernetes",
+				"role":                "apiserver",
+			},
+		},
 	}
 
 	return webhook, err
