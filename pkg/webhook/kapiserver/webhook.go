@@ -58,9 +58,9 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		NamespaceSelector: namespaceSelector,
 		ObjectSelector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"gardener.cloud/role": "controlplane",
-				"app":                 "kubernetes",
-				"role":                "apiserver",
+				v1beta1constants.GardenRole: v1beta1constants.GardenRoleControlPlane,
+				v1beta1constants.LabelApp:   v1beta1constants.LabelKubernetes,
+				v1beta1constants.LabelRole:  v1beta1constants.LabelAPIServer,
 			},
 		},
 	}
