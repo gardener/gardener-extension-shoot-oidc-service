@@ -8,10 +8,8 @@ updates:
   allow:
   - dependency-name: "github.com/gardener/gardener"
 - package-ecosystem: docker
-  directory: /
-  schedule:
-    interval: daily
-- package-ecosystem: docker
-  directory: /.test-defs
+  directories:
+  - /
+  - /.test-defs
   schedule:
     interval: daily
