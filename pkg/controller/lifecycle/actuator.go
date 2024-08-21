@@ -176,8 +176,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
 		k8sVersion,
-		// TODO(rfranzke): Delete this after August 2024.
-		a.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: namespace}, &appsv1.StatefulSet{}) == nil,
 	)
 	if err != nil {
 		return err
@@ -342,7 +340,7 @@ func getHighAvailabilityLabel() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version, gep19Monitoring bool) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
 		int10443      = int32(10443)
 		port10443     = intstr.FromInt32(int10443)
@@ -567,58 +565,18 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		return nil, err
 	}
 
-	var (
-		legacyObservabilityConfigMap *corev1.ConfigMap
-		serviceMonitor               *monitoringv1.ServiceMonitor
-	)
-
-	if !gep19Monitoring {
-		legacyObservabilityConfigMap = &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName + "-monitoring",
-				Namespace: namespace,
-				Labels:    utils.MergeStringMaps(getLabels(), map[string]string{v1beta1constants.LabelExtensionConfiguration: v1beta1constants.LabelMonitoring}),
-			},
-			Data: map[string]string{
-				v1beta1constants.PrometheusConfigMapScrapeConfig: `- job_name: ` + constants.ApplicationName + `
-  scheme: https
-  metrics_path: /metrics
-  tls_config:
-    insecure_skip_verify: true
-  honor_labels: false
-  kubernetes_sd_configs:
-  - role: endpoints
-    namespaces:
-      names: [` + namespace + `]
-  relabel_configs:
-  - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
-    action: keep
-    regex: ` + constants.ApplicationName + `;https
-  - source_labels: [ __meta_kubernetes_pod_name ]
-    target_label: pod
-  - source_labels: [__meta_kubernetes_namespace]
-    target_label: namespace
-  metric_relabel_configs:
-  - source_labels: [ __name__ ]
-    regex: ^(oidc_webhook_authenticator_.+)$
-    action: keep
-`,
-			},
-		}
-	} else {
-		serviceMonitor = &monitoringv1.ServiceMonitor{
-			ObjectMeta: monitoringutils.ConfigObjectMeta(constants.ApplicationName, namespace, "shoot"),
-			Spec: monitoringv1.ServiceMonitorSpec{
-				Selector: metav1.LabelSelector{MatchLabels: getLabels()},
-				Endpoints: []monitoringv1.Endpoint{{
-					Port:                 "https",
-					Scheme:               "https",
-					HonorLabels:          false,
-					TLSConfig:            &monitoringv1.TLSConfig{SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)}},
-					MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("oidc_webhook_authenticator_.+"),
-				}},
-			},
-		}
+	serviceMonitor := &monitoringv1.ServiceMonitor{
+		ObjectMeta: monitoringutils.ConfigObjectMeta(constants.ApplicationName, namespace, "shoot"),
+		Spec: monitoringv1.ServiceMonitorSpec{
+			Selector: metav1.LabelSelector{MatchLabels: getLabels()},
+			Endpoints: []monitoringv1.Endpoint{{
+				Port:                 "https",
+				Scheme:               "https",
+				HonorLabels:          false,
+				TLSConfig:            &monitoringv1.TLSConfig{SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)}},
+				MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("oidc_webhook_authenticator_.+"),
+			}},
+		},
 	}
 
 	resources, err := registry.AddAllAndSerialize(
@@ -632,7 +590,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		},
 		oidcDeployment,
 		service,
-		legacyObservabilityConfigMap,
 		serviceMonitor,
 	)
 
