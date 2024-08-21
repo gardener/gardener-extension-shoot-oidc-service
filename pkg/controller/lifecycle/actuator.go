@@ -176,8 +176,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
 		k8sVersion,
-		// TODO(rfranzke): Delete this after August 2024.
-		a.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: namespace}, &appsv1.StatefulSet{}) == nil,
 	)
 	if err != nil {
 		return err
@@ -342,7 +340,7 @@ func getHighAvailabilityLabel() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version, gep19Monitoring bool) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
 		int10443      = int32(10443)
 		port10443     = intstr.FromInt32(int10443)
