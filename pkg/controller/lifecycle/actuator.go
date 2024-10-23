@@ -102,7 +102,7 @@ func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hib
 
 	err := c.Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)
 
-	var initialCount int32 = 1
+	var initialCount int32 = 2
 	switch {
 	case err != nil && apierrors.IsNotFound(err):
 		// Scale to initial replica count
