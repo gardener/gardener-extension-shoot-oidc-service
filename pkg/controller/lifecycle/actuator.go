@@ -32,7 +32,7 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -44,6 +44,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/client-go/kubernetes"
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -101,7 +102,7 @@ func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hib
 
 	err := c.Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)
 
-	var initialCount int32 = 1
+	var initialCount int32 = 2
 	switch {
 	case err != nil && apierrors.IsNotFound(err):
 		// Scale to initial replica count
@@ -347,12 +348,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		registry      = managedresources.NewRegistry(gardenerkubernetes.SeedScheme, gardenerkubernetes.SeedCodec, gardenerkubernetes.SeedSerializer)
 		requestCPU    = resource.MustParse("10m")
 		requestMemory = resource.MustParse("32Mi")
-		// Keep in sync with GOMAXPROCS env variable set to the OWA container
-		// If cpu limit is > 1 round up GOMAXPROCS and set it to 1 otherwise
-		limitCPU = resource.MustParse("1")
-		// Keep in sync with GOMEMLIMIT env variable set to the OWA container.
-		// GOMEMLIMIT should be around 80-90% of the memory limit
-		limitMemory = resource.MustParse("1Gi")
 	)
 
 	kubeConfig := &configv1.Config{
@@ -468,18 +463,10 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 							PeriodSeconds:       20,
 							FailureThreshold:    3,
 						},
-						Env: []corev1.EnvVar{
-							{Name: "GOMAXPROCS", Value: "1"},      // in sync with the CPU limits
-							{Name: "GOMEMLIMIT", Value: "920MiB"}, // roughly 90% of 1Gi
-						},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    requestCPU,
 								corev1.ResourceMemory: requestMemory,
-							},
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    limitCPU,
-								corev1.ResourceMemory: limitMemory,
 							},
 						},
 						VolumeMounts: []corev1.VolumeMount{
@@ -520,14 +507,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 				"kubeconfig": kubeAPIServerKubeConfig,
 			},
 		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if oidcReplicas != nil && *oidcReplicas > 0 {
-		err = registry.Add(buildHPA(namespace))
-
 		if err != nil {
 			return nil, err
 		}
@@ -589,6 +568,7 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 			AutomountServiceAccountToken: ptr.To(false),
 		},
 		oidcDeployment,
+		buildVPA(namespace),
 		service,
 		serviceMonitor,
 	)
@@ -620,44 +600,6 @@ func buildPDB(namespace string, k8sVersion *semver.Version) client.Object {
 	}
 
 	return pdb
-}
-
-func buildHPA(namespace string) *autoscalingv2.HorizontalPodAutoscaler {
-	var (
-		minReplicas, maxReplicas int32 = 1, 3
-		targetAverageUtilization int32 = 80
-
-		objectMeta = metav1.ObjectMeta{
-			Name:      constants.ApplicationName,
-			Namespace: namespace,
-			Labels:    getHighAvailabilityLabel(),
-		}
-	)
-
-	return &autoscalingv2.HorizontalPodAutoscaler{
-		ObjectMeta: objectMeta,
-		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
-				APIVersion: appsv1.SchemeGroupVersion.String(),
-				Kind:       "Deployment",
-				Name:       constants.ApplicationName,
-			},
-			MinReplicas: &minReplicas,
-			MaxReplicas: maxReplicas,
-			Metrics: []autoscalingv2.MetricSpec{
-				{
-					Type: autoscalingv2.ResourceMetricSourceType,
-					Resource: &autoscalingv2.ResourceMetricSource{
-						Name: corev1.ResourceCPU,
-						Target: autoscalingv2.MetricTarget{
-							Type:               autoscalingv2.UtilizationMetricType,
-							AverageUtilization: &targetAverageUtilization,
-						},
-					},
-				},
-			},
-		},
-	}
 }
 
 func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName string) (map[string][]byte, error) {
@@ -730,4 +672,30 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 
 	shootResources["crd.yaml"] = crdContent
 	return shootResources, nil
+}
+
+func buildVPA(namespace string) *vpaautoscalingv1.VerticalPodAutoscaler {
+	return &vpaautoscalingv1.VerticalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+			Labels:    getLabels(),
+		},
+		Spec: vpaautoscalingv1.VerticalPodAutoscalerSpec{
+			TargetRef: &autoscalingv1.CrossVersionObjectReference{
+				APIVersion: appsv1.SchemeGroupVersion.String(),
+				Kind:       "Deployment",
+				Name:       constants.ApplicationName,
+			},
+			UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
+				UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeAuto),
+			},
+			ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
+				ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{{
+					ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
+					ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
+				}},
+			},
+		},
+	}
 }

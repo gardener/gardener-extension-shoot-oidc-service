@@ -15,9 +15,9 @@ resources:
   requests:
     cpu: "50m"
     memory: "64Mi"
-  limits:
-    cpu: "200m"
-    memory: "256Mi"
+  # limits:
+  #   cpu: "200m"
+  #   memory: "256Mi"
 
 controllers:
   lifecycle:
@@ -36,9 +36,13 @@ ignoreResources: false
 
 vpa:
   enabled: true
-  resourcePolicy:
-    minAllowed:
-      memory: 64Mi
+  resourcePolicy: {}
+    # minAllowed:
+    #   cpu: 100m
+    #   memory: 64Mi
+    # maxAllowed:
+    #   cpu: 1
+    #   memory: 512Mi
   updatePolicy:
     updateMode: "Auto"
 
