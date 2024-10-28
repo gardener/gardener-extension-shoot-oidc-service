@@ -25,3 +25,6 @@ testbin
 dive.log
 /tmp
 /gardener
+
+# gosec
+gosec-report.sarif

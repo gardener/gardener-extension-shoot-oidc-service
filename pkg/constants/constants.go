@@ -33,7 +33,7 @@ const (
 	// TokenValidator is used to name the resources used to allow the kube-apiserver to validate tokens against the oidc authenticator.
 	TokenValidator = ApplicationName + "-token-validator"
 	// TokenValidatorDir is the path were the token-validator related secrets are mounted in the kube-apiserver pod.
-	TokenValidatorDir = "/var/run/secrets/oidc-webhook/token-validator" //nolint:gosec
+	TokenValidatorDir = "/var/run/secrets/oidc-webhook/token-validator" // #nosec G101 -- No credential
 	// AuthenticatorDir is the path were the authenticator related secrets are mounted in the kube-apiserver pod.
 	AuthenticatorDir = "/var/run/secrets/oidc-webhook/authenticator"
 )
