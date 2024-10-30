@@ -88,7 +88,7 @@ gardener-extension-shoot-oidc-service:
             - gosec
             comment: |
               We use gosec (linter) for SAST scans, see: https://github.com/securego/gosec.
-              Enabled by https://github.com/gardener/gardener-extension-shoot-oidc-service/issues/248
+              Enabled by https://github.com/gardener/gardener-extension-shoot-oidc-service/pull/248
         slack:
           default_channel: 'internal_scp_workspace'
           channel_cfgs:
