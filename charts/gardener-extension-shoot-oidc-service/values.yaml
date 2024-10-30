@@ -55,3 +55,10 @@ healthPort: 8081
 metrics:
   port: 8080
   enableScraping: true
+
+imageVectorOverwrite: {}
+  # images:
+  # - name: oidc-webhook-authenticator
+  #   sourceRepository: github.com/gardener/oidc-webhook-authenticator
+  #   repository: europe-docker.pkg.dev/gardener-project/releases/gardener/oidc-webhook-authenticator
+  #   tag: "v0.32.0"
