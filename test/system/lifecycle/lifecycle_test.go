@@ -22,11 +22,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
-	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -97,14 +95,11 @@ var _ = Describe("Shoot oidc service testing", func() {
 		}
 
 		By("Verify that PodDisruptionBudget is correctly configured")
-		seedk8sVersion, err := semver.NewVersion(f.SeedClient.Version())
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcPDB), oidcPDB)).To(Succeed())
 		Expect(oidcPDB.Spec.MaxUnavailable).To(PointTo(Equal(intstr.FromInt(1))))
-		if versionutils.ConstraintK8sGreaterEqual126.Check(seedk8sVersion) {
-			Expect(oidcPDB.Spec.UnhealthyPodEvictionPolicy).To(PointTo(Equal(policyv1.AlwaysAllow)))
-		}
+		Expect(oidcPDB.Spec.UnhealthyPodEvictionPolicy).To(PointTo(Equal(policyv1.AlwaysAllow)))
 
 		By("Check OIDC config")
 		oidConfig, err := getOIDConfig(ctx, f.SeedClient.RESTClient())
