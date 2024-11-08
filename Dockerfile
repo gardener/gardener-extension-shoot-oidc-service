@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ############# builder
-FROM golang:1.23.2 AS builder
+FROM golang:1.23.3 AS builder
 
 ARG TARGETARCH
 WORKDIR /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
