@@ -12,6 +12,7 @@ Within a shoot cluster, it is possible to dynamically register OpenID Connect pr
 >  - you do not need to register an issuer twice (anyways not recommended since it can lead to misconfiguration and user impersonation if done poorly)
 >  - you need the ability to write custom expressions to map and validate claims
 >  - you need support for multiple audiences per authenticator
+>  - you need support for providers that don't support OpenID connect discovery
 > 
 > See how to make use of [Structured Authentication in Gardener](https://gardener.cloud/docs/gardener/shoot/shoot_access/#structured-authentication).
 
