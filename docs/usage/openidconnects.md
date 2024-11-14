@@ -3,6 +3,18 @@
 ## Introduction
 Within a shoot cluster, it is possible to dynamically register OpenID Connect providers. It is necessary that the Gardener installation your shoot cluster runs in is equipped with a `shoot-oidc-service` extension. Please ask your Gardener operator if the extension is available in your environment.
 
+> [!IMPORTANT]
+> Kubernetes v1.29 introduced support for [Structured Authentication](https://kubernetes.io/blog/2024/04/25/structured-authentication-moves-to-beta/).
+> Gardener allows the use of this feature for shoot clusters with Kubernetes version >= 1.30.
+> 
+> Structured Authentication should be preferred over the Gardener OIDC Extension in case:
+>  - you do not need more than 64 authenticators (a limitation that is tracked in https://github.com/kubernetes/kubernetes/issues/122809)
+>  - you do not need to register an issuer twice (anyways not recommended since it can lead to misconfiguration and user impersonation if done poorly)
+>  - you need the ability to write custom expressions to map and validate claims
+>  - you need support for multiple audiences per authenticator
+> 
+> See how to make use of [Structured Authentication in Gardener](https://gardener.cloud/docs/gardener/shoot/shoot_access/#structured-authentication).
+
 ## Shoot Feature Gate
 
 In most of the Gardener setups the `shoot-oidc-service` extension is not enabled globally and thus must be configured per shoot cluster. Please adapt the shoot specification by the configuration shown below to activate the extension individually.
@@ -20,8 +32,11 @@ spec:
 
 In order to register an OpenID Connect provider an `openidconnect` resource should be deployed in the shoot cluster.
 
+> [!CAUTION]
+> It is **strongly** recommended to **NOT** disable prefixing since it may result in unwanted impersonations. 
+> The rule of thumb is to always use meaningful and unique prefixes for both `username` and `groups`.
+> A good way to ensure this is to use the name of the `openidconnect` resource as shown in the example below.
 
-It is **strongly** recommended to **NOT** disable prefixing since it may result in unwanted impersonations. The rule of thumb is to always use meaningful and unique prefixes for both `username` and `groups`. A good way to ensure this is to use the name of the `openidconnect` resource as shown in the example below.
 
 ```yaml
 apiVersion: authentication.gardener.cloud/v1alpha1
