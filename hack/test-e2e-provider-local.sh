@@ -8,6 +8,14 @@ set -o nounset
 set -o pipefail
 set -o errexit
 
+# If running in prow, we need to ensure that garden.local.gardener.cloud resolves to localhost
+ensure_glgc_resolves_to_localhost() {
+  if [ -n "${CI:-}" ]; then
+    printf "\n127.0.0.1 garden.local.gardener.cloud\n" >> /etc/hosts
+    printf "\n::1 garden.local.gardener.cloud\n" >> /etc/hosts
+  fi
+}
+
 repo_root="$(readlink -f $(dirname ${0})/..)"
 gardener_version=$(go list -m -f '{{.Version}}' github.com/gardener/gardener)
 
@@ -18,6 +26,8 @@ else
   cd "$repo_root/gardener"
   git fetch
 fi
+
+ensure_glgc_resolves_to_localhost
 
 git checkout "$gardener_version"
 make kind-up
