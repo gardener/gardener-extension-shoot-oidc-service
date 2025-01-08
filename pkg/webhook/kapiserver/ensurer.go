@@ -48,16 +48,16 @@ type ensurer struct {
 var NewSecretsManager = extensionssecretsmanager.SecretsManagerForCluster
 
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the oidc-webhook-authenticator requirements.
-func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, new, _ *appsv1.Deployment) error {
-	template := &new.Spec.Template
+func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, newDeployment, _ *appsv1.Deployment) error {
+	template := &newDeployment.Spec.Template
 	ps := &template.Spec
 
 	if c := extensionswebhook.ContainerWithName(ps.Containers, v1beta1constants.DeploymentNameKubeAPIServer); c != nil {
-		if new.Status.ReadyReplicas <= 0 {
+		if newDeployment.Status.ReadyReplicas <= 0 {
 			return nil
 		}
 
-		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookKubeConfigSecretName, Namespace: new.Namespace}}
+		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookKubeConfigSecretName, Namespace: newDeployment.Namespace}}
 		if err := e.client.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil
@@ -65,7 +65,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 			return err
 		}
 
-		cluster, err := controller.GetCluster(ctx, e.client, new.Namespace)
+		cluster, err := controller.GetCluster(ctx, e.client, newDeployment.Namespace)
 		if err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 		}
 
 		// we expect that the CA bundle secret is handled by the lifecycle controller
-		caBundleSecret, err := getLatestIssuedCABundleSecret(ctx, e.client, new.Namespace)
+		caBundleSecret, err := getLatestIssuedCABundleSecret(ctx, e.client, newDeployment.Namespace)
 		if err != nil {
 			// if CA secret is still not created we do not want to return an error
 			if _, ok := err.(*noCASecretError); ok {
