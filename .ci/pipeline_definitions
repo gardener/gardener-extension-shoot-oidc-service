@@ -38,6 +38,13 @@ gardener-extension-shoot-oidc-service:
             image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/shoot-oidc-service
             dockerfile: 'Dockerfile'
             target: gardener-extension-shoot-oidc-service
+            resource_labels:
+            - name: 'cloud.gardener.cnudie/responsibles'
+              value:
+              - type: 'githubUser'
+                username: 'dimityrmirchev'
+              - type: 'githubUser'
+                username: 'vpnachev'
   jobs:
     head-update:
       traits:
