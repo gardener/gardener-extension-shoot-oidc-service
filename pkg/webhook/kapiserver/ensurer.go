@@ -56,7 +56,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookKubeConfigSecretName, Namespace: newDeployment.Namespace}}
 		if err := e.client.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Info("Authentication kubeconfig secret is not yet created, skipping mutation of kube-apiserver deployment")
+				log.Info("Authentication token webhook config secret is not yet created, skipping mutation of kube-apiserver deployment")
 				return nil
 			}
 
