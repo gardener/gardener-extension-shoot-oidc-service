@@ -433,6 +433,9 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 						Name:            constants.ApplicationName,
 						Image:           image.String(),
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: ptr.To(false),
+						},
 						Args: []string{
 							"--kubeconfig=" + gutil.PathGenericKubeconfig,
 							fmt.Sprintf("--tls-cert-file=%s/tls.crt", constants.WebhookTLSCertDir),

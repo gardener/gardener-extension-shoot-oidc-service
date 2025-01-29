@@ -65,6 +65,8 @@ spec:
       - name: gardener-extension-{{ .Values.serviceName }}
         image: {{ include "image" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
         command:
         - /gardener-extension-shoot-oidc-service
         - --config=/etc/oidc-service/config.yaml
