@@ -19,4 +19,6 @@ cp -f $repo_root/example/controller-registration.yaml $repo_root/tmp/controller-
 yq -i e "(select (.helm.values.image) | .helm.values.image.tag) |= \"$version\"" $repo_root/tmp/controller-registration.yaml
 yq -i e '(select (.helm.values.image) | .helm.values.image.repository) |= "docker.io/library/shoot-oidc-service-local"' $repo_root/tmp/controller-registration.yaml
 
-kubectl apply -f "$repo_root/tmp/controller-registration.yaml"
+kubectl apply -f "$repo_root/tmp/controller-registration.yaml" \
+    --server-side \
+    --force-conflicts
