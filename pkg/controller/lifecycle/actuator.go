@@ -171,7 +171,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 
 	seedResources, err := getSeedResources(
 		oidcReplicas,
-		hibernated,
 		namespace,
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
@@ -341,7 +340,7 @@ func getHighAvailabilityLabel() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
 	var (
 		int10443      = int32(10443)
 		port10443     = intstr.FromInt32(int10443)
@@ -499,22 +498,6 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		return nil, err
 	}
 
-	if !hibernated {
-		err = registry.Add(&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.WebhookKubeConfigSecretName,
-				Namespace: namespace,
-				Labels:    getLabels(),
-			},
-			Data: map[string][]byte{
-				"kubeconfig": kubeAPIServerKubeConfig,
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        constants.ApplicationName,
@@ -574,6 +557,16 @@ func getSeedResources(oidcReplicas *int32, hibernated bool, namespace, genericKu
 		buildVPA(namespace),
 		service,
 		serviceMonitor,
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.WebhookKubeConfigSecretName,
+				Namespace: namespace,
+				Labels:    getLabels(),
+			},
+			Data: map[string][]byte{
+				"kubeconfig": kubeAPIServerKubeConfig,
+			},
+		},
 	)
 
 	if err != nil {

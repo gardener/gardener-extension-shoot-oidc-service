@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gardener/gardener/extensions/pkg/controller"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -51,40 +50,27 @@ var NewSecretsManager = extensionssecretsmanager.SecretsManagerForCluster
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, newDeployment, _ *appsv1.Deployment) error {
 	template := &newDeployment.Spec.Template
 	ps := &template.Spec
+	log := e.logger.WithValues("namespace", newDeployment.Namespace)
 
 	if c := extensionswebhook.ContainerWithName(ps.Containers, v1beta1constants.DeploymentNameKubeAPIServer); c != nil {
-		if newDeployment.Status.ReadyReplicas <= 0 {
-			return nil
-		}
-
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: constants.WebhookKubeConfigSecretName, Namespace: newDeployment.Namespace}}
 		if err := e.client.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
 			if apierrors.IsNotFound(err) {
+				log.Info("Authentication token webhook config secret is not yet created, skipping mutation of kube-apiserver deployment")
 				return nil
 			}
-			return err
-		}
 
-		cluster, err := controller.GetCluster(ctx, e.client, newDeployment.Namespace)
-		if err != nil {
 			return err
-		}
-
-		if controller.IsHibernated(cluster) {
-			return nil
 		}
 
 		// we expect that the CA bundle secret is handled by the lifecycle controller
 		caBundleSecret, err := getLatestIssuedCABundleSecret(ctx, e.client, newDeployment.Namespace)
 		if err != nil {
-			// if CA secret is still not created we do not want to return an error
-			if _, ok := err.(*noCASecretError); ok {
-				return nil
-			}
 			return err
 		}
 
 		ensureKubeAPIServerIsMutated(ps, c, caBundleSecret.Name)
+		log.Info("It is ensured kube-apiserver is configured to use the extension")
 	}
 
 	return nil
