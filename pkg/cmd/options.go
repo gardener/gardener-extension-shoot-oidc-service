@@ -18,9 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	apisconfig "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config/v1alpha1"
-	controllerconfig "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/config"
 	healthcheckcontroller "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/lifecycle"
 	webhook "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/webhook/kapiserver"
@@ -44,7 +43,7 @@ var (
 
 func init() {
 	scheme = runtime.NewScheme()
-	utilruntime.Must(apisconfig.AddToScheme(scheme))
+	utilruntime.Must(config.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 
 	decoder = serializer.NewCodecFactory(scheme).UniversalDecoder()
@@ -71,7 +70,7 @@ func (o *OIDCServiceOptions) Complete() error {
 		return err
 	}
 
-	config := apisconfig.Configuration{}
+	config := config.Configuration{}
 	_, _, err = decoder.Decode(data, nil, &config)
 	if err != nil {
 		return err
@@ -91,12 +90,12 @@ func (o *OIDCServiceOptions) Completed() *OIDCServiceConfig {
 
 // OIDCServiceConfig contains configuration information about the OIDC service.
 type OIDCServiceConfig struct {
-	config apisconfig.Configuration
+	config config.Configuration
 }
 
 // Apply applies the OIDCServiceOptions to the passed ControllerOptions instance.
-func (c *OIDCServiceConfig) Apply(config *controllerconfig.Config) {
-	config.Configuration = c.config
+func (c *OIDCServiceConfig) Apply(config *config.Configuration) {
+	*config = c.config
 }
 
 // ApplyHealthCheckConfig applies the HealthCheckConfig to the config.

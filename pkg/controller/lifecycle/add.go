@@ -14,8 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
-	controllerconfig "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/config"
 )
 
 const (
@@ -35,7 +35,7 @@ type AddOptions struct {
 	// ControllerOptions contains options for the controller.
 	ControllerOptions controller.Options
 	// ServiceConfig contains configuration for the shoot OIDC service.
-	ServiceConfig controllerconfig.Config
+	ServiceConfig config.Configuration
 	// IgnoreOperationAnnotation specifies whether to ignore the operation annotation or not.
 	IgnoreOperationAnnotation bool
 }
@@ -48,7 +48,7 @@ func AddToManager(ctx context.Context, mgr manager.Manager) error {
 	}
 
 	return extension.Add(ctx, mgr, extension.AddArgs{
-		Actuator:          NewActuator(mgr, clientset, DefaultAddOptions.ServiceConfig.Configuration),
+		Actuator:          NewActuator(mgr, clientset, DefaultAddOptions.ServiceConfig),
 		ControllerOptions: DefaultAddOptions.ControllerOptions,
 		Name:              Name,
 		FinalizerSuffix:   FinalizerSuffix,
