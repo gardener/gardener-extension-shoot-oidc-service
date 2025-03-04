@@ -364,23 +364,6 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 		return nil, err
 	}
 
-	pdb := &policyv1.PodDisruptionBudget{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.ApplicationName,
-			Namespace: namespace,
-			Labels:    getLabels(),
-		},
-		Spec: policyv1.PodDisruptionBudgetSpec{
-			MaxUnavailable:             ptr.To(intstr.FromInt(1)),
-			Selector:                   &metav1.LabelSelector{MatchLabels: getLabels()},
-			UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
-		},
-	}
-
-	if err := registry.Add(pdb); err != nil {
-		return nil, err
-	}
-
 	image, err := imagevector.ImageVector().FindImage(constants.ImageName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find image version for %s: %v", constants.ImageName, err)
@@ -544,6 +527,19 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 		},
 	}
 
+	pdb := &policyv1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+			Labels:    getLabels(),
+		},
+		Spec: policyv1.PodDisruptionBudgetSpec{
+			MaxUnavailable:             ptr.To(intstr.FromInt(1)),
+			Selector:                   &metav1.LabelSelector{MatchLabels: getLabels()},
+			UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
+		},
+	}
+
 	resources, err := registry.AddAllAndSerialize(
 		&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
@@ -553,6 +549,7 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 			},
 			AutomountServiceAccountToken: ptr.To(false),
 		},
+		pdb,
 		oidcDeployment,
 		buildVPA(namespace),
 		service,
