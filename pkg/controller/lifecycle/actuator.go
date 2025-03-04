@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -27,7 +26,6 @@ import (
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/gardener/gardener/pkg/utils/retry"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
-	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	admissionregistration "k8s.io/api/admissionregistration/v1"
@@ -159,23 +157,12 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("secret %q not found", secrets.CAName)
 	}
 
-	k8sVersionInfo, err := a.clientset.Discovery().ServerVersion()
-	if err != nil {
-		return err
-	}
-
-	k8sVersion, err := semver.NewVersion(k8sVersionInfo.GitVersion)
-	if err != nil {
-		return err
-	}
-
 	seedResources, err := getSeedResources(
 		oidcReplicas,
 		namespace,
 		extensions.GenericTokenKubeconfigSecretNameFromCluster(cluster),
 		oidcShootAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
-		k8sVersion,
 	)
 	if err != nil {
 		return err
@@ -340,7 +327,7 @@ func getHighAvailabilityLabel() map[string]string {
 	}
 }
 
-func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string, k8sVersion *semver.Version) (map[string][]byte, error) {
+func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, shootAccessSecretName, serverTLSSecretName string) (map[string][]byte, error) {
 	var (
 		int10443      = int32(10443)
 		port10443     = intstr.FromInt32(int10443)
@@ -374,10 +361,6 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 
 	kubeAPIServerKubeConfig, err := runtime.Encode(configlatest.Codec, kubeConfig)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := registry.Add(buildPDB(namespace, k8sVersion)); err != nil {
 		return nil, err
 	}
 
@@ -544,6 +527,19 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 		},
 	}
 
+	pdb := &policyv1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+			Labels:    getLabels(),
+		},
+		Spec: policyv1.PodDisruptionBudgetSpec{
+			MaxUnavailable:             ptr.To(intstr.FromInt(1)),
+			Selector:                   &metav1.LabelSelector{MatchLabels: getLabels()},
+			UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
+		},
+	}
+
 	resources, err := registry.AddAllAndSerialize(
 		&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
@@ -553,6 +549,7 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 			},
 			AutomountServiceAccountToken: ptr.To(false),
 		},
+		pdb,
 		oidcDeployment,
 		buildVPA(namespace),
 		service,
@@ -574,28 +571,6 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 	}
 
 	return resources, nil
-}
-
-func buildPDB(namespace string, k8sVersion *semver.Version) client.Object {
-	var (
-		pdb = &policyv1.PodDisruptionBudget{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName,
-				Namespace: namespace,
-				Labels:    getLabels(),
-			},
-			Spec: policyv1.PodDisruptionBudgetSpec{
-				MaxUnavailable: ptr.To(intstr.FromInt(1)),
-				Selector:       &metav1.LabelSelector{MatchLabels: getLabels()},
-			},
-		}
-	)
-
-	if versionutils.ConstraintK8sGreaterEqual126.Check(k8sVersion) {
-		pdb.Spec.UnhealthyPodEvictionPolicy = ptr.To(policyv1.AlwaysAllow)
-	}
-
-	return pdb
 }
 
 func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName string) (map[string][]byte, error) {
