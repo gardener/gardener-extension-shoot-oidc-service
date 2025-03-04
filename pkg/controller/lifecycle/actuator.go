@@ -364,7 +364,20 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 		return nil, err
 	}
 
-	if err := registry.Add(buildPDB(namespace)); err != nil {
+	pdb := &policyv1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+			Labels:    getLabels(),
+		},
+		Spec: policyv1.PodDisruptionBudgetSpec{
+			MaxUnavailable:             ptr.To(intstr.FromInt(1)),
+			Selector:                   &metav1.LabelSelector{MatchLabels: getLabels()},
+			UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
+		},
+	}
+
+	if err := registry.Add(pdb); err != nil {
 		return nil, err
 	}
 
@@ -561,25 +574,6 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 	}
 
 	return resources, nil
-}
-
-func buildPDB(namespace string) client.Object {
-	var (
-		pdb = &policyv1.PodDisruptionBudget{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.ApplicationName,
-				Namespace: namespace,
-				Labels:    getLabels(),
-			},
-			Spec: policyv1.PodDisruptionBudgetSpec{
-				MaxUnavailable:             ptr.To(intstr.FromInt(1)),
-				Selector:                   &metav1.LabelSelector{MatchLabels: getLabels()},
-				UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
-			},
-		}
-	)
-
-	return pdb
 }
 
 func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName string) (map[string][]byte, error) {
