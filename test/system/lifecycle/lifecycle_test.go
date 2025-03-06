@@ -94,9 +94,6 @@ var _ = Describe("Shoot oidc service testing", func() {
 			},
 		}
 
-		By("Verify that PodDisruptionBudget is correctly configured")
-		Expect(err).NotTo(HaveOccurred())
-
 		Expect(f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcPDB), oidcPDB)).To(Succeed())
 		Expect(oidcPDB.Spec.MaxUnavailable).To(PointTo(Equal(intstr.FromInt(1))))
 		Expect(oidcPDB.Spec.UnhealthyPodEvictionPolicy).To(PointTo(Equal(policyv1.AlwaysAllow)))
