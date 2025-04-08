@@ -52,7 +52,9 @@ We are using Go modules for Golang package dependency management and [Ginkgo](ht
 
 ## Feedback and Support
 
-Feedback and contributions are always welcome. Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-shoot-oidc-service/issues) or join our [Slack channel #gardener](https://kubernetes.slack.com/messages/gardener) (please invite yourself to the Kubernetes workspace [here](http://slack.k8s.io)).
+Feedback and contributions are always welcome!
+
+Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-shoot-oidc-service/issues) or reach out on [Slack](https://gardener-cloud.slack.com/) (join the workspace [here](https://gardener.cloud/community/community-bio/)).
 
 ## Learn more!
 
