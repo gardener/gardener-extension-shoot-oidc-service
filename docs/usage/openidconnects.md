@@ -38,6 +38,9 @@ In order to register an OpenID Connect provider an `openidconnect` resource shou
 > The rule of thumb is to always use meaningful and unique prefixes for both `username` and `groups`.
 > A good way to ensure this is to use the name of the `openidconnect` resource as shown in the example below.
 
+> [!CAUTION]
+> It is **strongly** recommended to have **unique** issuer URLs across all `openidconnect`s and other places that might contain issuer URL configurations related to authentication (e.g. [Structured Authentication](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#using-authentication-configuration) even forbids that).
+> Users handled by an issuer must be identified in a consistent, predictable and unique way!
 
 ```yaml
 apiVersion: authentication.gardener.cloud/v1alpha1
