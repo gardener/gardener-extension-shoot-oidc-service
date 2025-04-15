@@ -6,7 +6,8 @@ metadata:
 spec:
   extensions:
   - type: shoot-oidc-service
-  cloudProfileName: local
+  cloudProfile:
+    name: local
   region: local
   provider:
     type: local
