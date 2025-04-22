@@ -6,7 +6,9 @@ package kapiserver
 
 import (
 	"context"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -87,8 +89,13 @@ func NewEnsurer(mgr manager.Manager, logger logr.Logger) genericmutator.Ensurer 
 // ensureKubeAPIServerIsMutated ensures that the kube-apiserver deployment is mutated accordingly
 // so that it is able to communicate with the oidc-webhook-authenticator
 func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container, caBundleSecretName string) {
-	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookConfigPrefix, constants.AuthenticatorDir+"/kubeconfig")
-	c.Command = extensionswebhook.EnsureStringWithPrefix(c.Command, oidcWebhookCacheTTLPrefix, "0")
+	c.Args = extensionswebhook.EnsureStringWithPrefix(c.Args, oidcWebhookConfigPrefix, constants.AuthenticatorDir+"/kubeconfig")
+	c.Args = extensionswebhook.EnsureStringWithPrefix(c.Args, oidcWebhookCacheTTLPrefix, "0")
+
+	// TODO(vpnachev): Remove clean-up of `--authentication-token-webhook-` flags in `command` after version v0.32.0 has been released.
+	c.Command = slices.DeleteFunc(c.Command, func(x string) bool {
+		return strings.HasPrefix(x, oidcWebhookConfigPrefix) || strings.HasPrefix(x, oidcWebhookCacheTTLPrefix)
+	})
 
 	c.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(c.VolumeMounts, corev1.VolumeMount{
 		Name:      oidcAuthenticatorKubeConfigVolumeName,
