@@ -62,8 +62,8 @@ var _ = Describe("Mutator", func() {
 			c := extensionswebhook.ContainerWithName(deployment.Spec.Template.Spec.Containers, v1beta1constants.DeploymentNameKubeAPIServer)
 			Expect(c).To(Not(BeNil()))
 
-			Expect(c.Command).To(ContainElement(cacheElement))
-			Expect(c.Command).To(ContainElement(configElement))
+			Expect(c.Args).To(ContainElement(cacheElement))
+			Expect(c.Args).To(ContainElement(configElement))
 
 			Expect(c.VolumeMounts).To(ContainElement(oidcAuthenticatorKubeConfigVolumeMount))
 			Expect(deployment.Spec.Template.Spec.Volumes).To(ContainElement(oidcAuthenticatorKubeConfigVolume))
@@ -73,7 +73,7 @@ var _ = Describe("Mutator", func() {
 			c := extensionswebhook.ContainerWithName(deployment.Spec.Template.Spec.Containers, v1beta1constants.DeploymentNameKubeAPIServer)
 			Expect(c).To(Not(BeNil()))
 
-			for _, v := range c.Command {
+			for _, v := range c.Args {
 				Expect(strings.HasPrefix(v, oidcWebhookConfigPrefix)).To(BeFalse())
 				Expect(strings.HasPrefix(v, oidcWebhookCacheTTLPrefix)).To(BeFalse())
 			}
@@ -163,7 +163,7 @@ var _ = Describe("Mutator", func() {
 		})
 
 		It("should modify existing elements of a pod", func() {
-			deployment.Spec.Template.Spec.Containers[0].Command = []string{
+			deployment.Spec.Template.Spec.Containers[0].Args = []string{
 				"--authentication-token-webhook-cache-ttl=?",
 				"--authentication-token-webhook-config-file=?",
 			}
@@ -173,6 +173,20 @@ var _ = Describe("Mutator", func() {
 
 			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).To(Succeed())
 			checkDeploymentIsCorrectlyMutated(deployment)
+		})
+
+		// TODO(vpnachev): Remove clean-up of `--authentication-token-webhook-` flags in `command` after version v0.32.0 has been released.
+		It("should remove --authentication-token-webhook- flags from command", func() {
+			deployment.Spec.Template.Spec.Containers[0].Command = []string{
+				"--authentication-token-webhook-cache-ttl=?",
+				"--authentication-token-webhook-config-file=?",
+			}
+
+			Expect(fakeClient.Create(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: constants.WebhookKubeConfigSecretName}})).To(Succeed())
+			Expect(fakeClient.Create(ctx, caSecret)).To(Succeed())
+
+			Expect(ensurer.EnsureKubeAPIServerDeployment(ctx, nil, deployment, nil)).To(Succeed())
+			Expect(deployment.Spec.Template.Spec.Containers[0].Command).To(BeEmpty())
 		})
 
 		It("should add oidc configs to a kube-apiserver pod if kube-apiserver deployment does not have ready replicas", func() {

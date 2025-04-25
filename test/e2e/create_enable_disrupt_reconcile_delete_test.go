@@ -87,7 +87,7 @@ func breakAPIServerDepl(ctx context.Context, c client.Client, namespace string) 
 	}
 	for i, v := range kubeAPIServerDepl.Spec.Template.Spec.Containers {
 		if v.Name == "kube-apiserver" {
-			kubeAPIServerDepl.Spec.Template.Spec.Containers[i].Command = append(kubeAPIServerDepl.Spec.Template.Spec.Containers[i].Command, "--hello-world=invalid-flag")
+			kubeAPIServerDepl.Spec.Template.Spec.Containers[i].Args = append(kubeAPIServerDepl.Spec.Template.Spec.Containers[i].Args, "--hello-world=invalid-flag")
 			break
 		}
 	}
