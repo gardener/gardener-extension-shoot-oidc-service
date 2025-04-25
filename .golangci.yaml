@@ -1,21 +1,30 @@
+version: "2"
 run:
   concurrency: 4
-  deadline: 10m
-
 linters:
   enable:
-  - gocritic
-  - gosec
-  - revive
-
-skip-files:
-- "zz_generated\\..*\\.go$"
-
-issues:
-  exclude-use-default: false
-  exclude:
-  # - var-naming # ((var|const|struct field|func) .* should be .*
-  - dot-imports # should not use dot imports
-  - "exported: (type|func) name will be used as .* by other packages, and that stutters;"
-  - indent-error-flow # if block ends with a return statement, so drop this else and outdent its block
-  - package-comments
+    - gocritic
+    - gosec
+    - revive
+  exclusions:
+    generated: lax
+    rules:
+      - path: (.+)\.go$
+        text: dot-imports
+      - path: (.+)\.go$
+        text: 'exported: (type|func) name will be used as .* by other packages, and that stutters;'
+      - path: (.+)\.go$
+        text: indent-error-flow
+      - path: (.+)\.go$
+        text: package-comments
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
