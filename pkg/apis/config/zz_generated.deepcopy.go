@@ -10,7 +10,7 @@
 package config
 
 import (
-	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	v1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -20,7 +20,7 @@ func (in *Configuration) DeepCopyInto(out *Configuration) {
 	out.TypeMeta = in.TypeMeta
 	if in.HealthCheckConfig != nil {
 		in, out := &in.HealthCheckConfig, &out.HealthCheckConfig
-		*out = new(apisconfig.HealthCheckConfig)
+		*out = new(v1alpha1.HealthCheckConfig)
 		(*in).DeepCopyInto(*out)
 	}
 	return

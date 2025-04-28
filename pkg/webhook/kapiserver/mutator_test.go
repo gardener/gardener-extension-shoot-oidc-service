@@ -88,12 +88,12 @@ var _ = Describe("Mutator", func() {
 				Expect(v.Name).NotTo(Equal(tokenValidatorSecretVolumeName))
 
 				// Ensure no volume source with the oidc config related secrets are present
-				if v.VolumeSource.Secret != nil {
+				if v.Secret != nil {
 					Expect(v.VolumeSource.Secret.SecretName).NotTo(Equal(constants.WebhookKubeConfigSecretName))
 				}
 
-				if v.VolumeSource.Projected != nil && len(v.VolumeSource.Projected.Sources) > 0 {
-					for _, s := range v.VolumeSource.Projected.Sources {
+				if v.Projected != nil && len(v.Projected.Sources) > 0 {
+					for _, s := range v.Projected.Sources {
 						if s.Secret != nil {
 							Expect(s.Secret.LocalObjectReference.Name).NotTo(Equal(gutil.SecretNamePrefixShootAccess + constants.ApplicationName + "-token-validator"))
 						}

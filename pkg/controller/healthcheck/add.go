@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	apisconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck/general"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -25,15 +25,14 @@ var (
 	defaultSyncPeriod = time.Second * 30
 	// DefaultAddOptions contains configuration for the health check controller.
 	DefaultAddOptions = healthcheck.DefaultAddArgs{
-		HealthCheckConfig: healthcheckconfig.HealthCheckConfig{SyncPeriod: metav1.Duration{Duration: defaultSyncPeriod}},
+		HealthCheckConfig: apisconfigv1alpha1.HealthCheckConfig{SyncPeriod: metav1.Duration{Duration: defaultSyncPeriod}},
 	}
 )
 
 // RegisterHealthChecks registers health checks for each extension resource
 // HealthChecks are grouped by extension (e.g worker), extension.type (e.g aws) and  Health Check Type (e.g ShootControlPlaneHealthy)
-func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthcheck.DefaultAddArgs) error {
+func RegisterHealthChecks(mgr manager.Manager, opts healthcheck.DefaultAddArgs) error {
 	return healthcheck.DefaultRegistration(
-		ctx,
 		constants.ExtensionType,
 		extensionsv1alpha1.SchemeGroupVersion.WithKind(extensionsv1alpha1.ExtensionResource),
 		func() client.ObjectList { return &extensionsv1alpha1.ExtensionList{} },
@@ -52,6 +51,6 @@ func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthc
 }
 
 // AddToManager adds a controller with the default Options.
-func AddToManager(ctx context.Context, mgr manager.Manager) error {
-	return RegisterHealthChecks(ctx, mgr, DefaultAddOptions)
+func AddToManager(_ context.Context, mgr manager.Manager) error {
+	return RegisterHealthChecks(mgr, DefaultAddOptions)
 }

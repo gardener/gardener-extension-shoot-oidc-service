@@ -47,7 +47,7 @@ func AddToManager(ctx context.Context, mgr manager.Manager) error {
 		return fmt.Errorf("could not create Kubernetes clientset: %w", err)
 	}
 
-	return extension.Add(ctx, mgr, extension.AddArgs{
+	return extension.Add(mgr, extension.AddArgs{
 		Actuator:          NewActuator(mgr, clientset, DefaultAddOptions.ServiceConfig),
 		ControllerOptions: DefaultAddOptions.ControllerOptions,
 		Name:              Name,
