@@ -48,8 +48,6 @@ vpa:
 
 gardener:
   version: ""
-# autonomousShootCluster: false
-
 
 healthPort: 8081
 
