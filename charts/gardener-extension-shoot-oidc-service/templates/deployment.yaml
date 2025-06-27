@@ -82,9 +82,6 @@ spec:
         - --gardener-version={{ .Values.gardener.version }}
         - --metrics-bind-address=:{{ .Values.metrics.port }}
         - --health-bind-address=:{{ .Values.healthPort }}
-        {{- if .Values.gardener.autonomousShootCluster }}
-        - --autonomous-shoot-cluster={{ .Values.gardener.autonomousShootCluster }}
-        {{- end }}
         ports:
         - name: webhook-server
           containerPort: {{ .Values.webhookConfig.serverPort }}
