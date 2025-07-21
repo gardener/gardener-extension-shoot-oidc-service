@@ -18,7 +18,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -56,9 +55,11 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			},
 		},
 		Spec: gardencorev1beta1.ShootSpec{
-			Region:            "local",
+			CloudProfile: &gardencorev1beta1.CloudProfileReference{
+				Name: "local",
+			},
 			SecretBindingName: ptr.To("local"),
-			CloudProfile:      &gardencorev1beta1.CloudProfileReference{Name: "local"},
+			Region:            "local",
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.32.0",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
@@ -66,12 +67,10 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 					RegistryPullQPS:     ptr.To[int32](10),
 					RegistryBurst:       ptr.To[int32](20),
 				},
-				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
 			},
 			Networking: &gardencorev1beta1.Networking{
-				Type:           ptr.To("calico"),
-				Nodes:          ptr.To("10.10.0.0/16"),
-				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"calico.networking.extensions.gardener.cloud/v1alpha1","kind":"NetworkConfig","typha":{"enabled":false},"backend":"none"}`)},
+				Type:  ptr.To("calico"),
+				Nodes: ptr.To("10.10.0.0/16"),
 			},
 			Provider: gardencorev1beta1.Provider{
 				Type: "local",
