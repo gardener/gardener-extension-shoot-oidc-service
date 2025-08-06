@@ -1,0 +1,22 @@
+version = 1
+SPDX-PackageName = "Gardener gardener-extension-shoot-oidc-service"
+SPDX-PackageSupplier = "The Gardener project <gardener@googlegroups.com>"
+SPDX-PackageDownloadLocation = "https://github.com/gardener/gardener-extension-shoot-oidc-service"
+
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2017-2025 SAP SE or an SAP affiliate company and Gardener contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "**.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2017-2025 SAP SE or an SAP affiliate company and Gardener contributors"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = "hack/cherry-pick-pull.sh"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2015 The Kubernetes Authors"
+SPDX-License-Identifier = "Apache-2.0"
