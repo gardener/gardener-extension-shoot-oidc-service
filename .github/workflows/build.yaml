@@ -94,7 +94,7 @@ jobs:
           set -o nounset
           set -o pipefail
 
-          mkdir /tmp/blobs.d
+          mkdir -p /tmp/blobs.d
           make verify-extended |& tee /tmp/blobs.d/verify-log.txt
           # verify calls `make sast-report`, which generates `gosec-report.sarif`
           tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
