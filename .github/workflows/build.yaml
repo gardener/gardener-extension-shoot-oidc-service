@@ -86,7 +86,8 @@ jobs:
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
         with:
           remove-trusted-label: false
-      - name: run-test
+      - uses: gardener/cc-utils/.github/actions/setup-git-identity@master
+      - name: run-verify
         shell: bash
         run: |
           set -o errexit
