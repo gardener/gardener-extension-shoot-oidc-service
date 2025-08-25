@@ -9,5 +9,8 @@ runs:
     - name: make-generate
       shell: bash
       run: |
-        set -eu
+        set -o errexit
+        set -o nounset
+        set -o pipefail
+
         make generate

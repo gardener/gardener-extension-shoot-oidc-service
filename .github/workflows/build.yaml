@@ -24,6 +24,7 @@ jobs:
     name: Build OCI-Images
     needs:
       - prepare
+      - verify
     permissions:
       contents: read
       packages: write
@@ -82,12 +83,16 @@ jobs:
         with:
           go-version: '1.24'
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
-      - name: run-test
+      - uses: gardener/cc-utils/.github/actions/setup-git-identity@master
+      - name: run-verify
         shell: bash
         run: |
-          set -eu
-          mkdir /tmp/blobs.d
-          .ci/verify |& tee /tmp/blobs.d/verify-log.txt
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+
+          mkdir -p /tmp/blobs.d
+          make verify-extended |& tee /tmp/blobs.d/verify-log.txt
           # verify calls `make sast-report`, which generates `gosec-report.sarif`
           tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
           tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
