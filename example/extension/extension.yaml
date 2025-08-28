@@ -1,0 +1,11 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  annotations:
+    security.gardener.cloud/pod-security-enforce: baseline
+  name: shoot-oidc-service
+spec:
+  resources:
+  - kind: Extension
+    type: shoot-oidc-service
+    workerlessSupported: true
