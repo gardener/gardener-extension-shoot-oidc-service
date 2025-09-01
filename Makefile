@@ -90,8 +90,8 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 
 .PHONY: generate
-generate: $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(CONTROLLER_GEN) $(YQ) $(VGOPATH) $(MOCKGEN)
-	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./charts/... ./cmd/... ./pkg/... ./test/...
+generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(EXTENSION_GEN) $(HELM) $(KUSTOMIZE) $(MOCKGEN) $(VGOPATH) $(YQ)
+	@VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./charts/... ./cmd/... ./example/... ./pkg/... ./test/...
 	$(MAKE) format
 
 .PHONY: format
