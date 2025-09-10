@@ -68,4 +68,4 @@ Please find further resources about out project here:
 * [GEP-1 (Gardener Enhancement Proposal) on extensibility](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md)
 * [Extensibility API documentation](https://github.com/gardener/gardener/tree/master/docs/extensions)
 * [Gardener Extensions Golang library](https://godoc.org/github.com/gardener/gardener/extensions/pkg)
-* [Gardener API Reference](https://gardener.cloud/api-reference/)
+* [Gardener API Reference](https://github.com/gardener/gardener/blob/master/docs/api-reference/README.md)
