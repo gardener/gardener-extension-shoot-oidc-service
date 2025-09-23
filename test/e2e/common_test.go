@@ -70,7 +70,7 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			},
 			Networking: &gardencorev1beta1.Networking{
 				Type:  ptr.To("calico"),
-				Nodes: ptr.To("10.10.0.0/16"),
+				Nodes: ptr.To("10.0.0.0/16"),
 			},
 			Provider: gardencorev1beta1.Provider{
 				Type: "local",
