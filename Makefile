@@ -74,6 +74,7 @@ docker-images:
 tidy:
 	@go mod tidy
 	@cp $(GARDENER_HACK_DIR)/cherry-pick-pull.sh $(HACK_DIR)/cherry-pick-pull.sh && chmod +xw $(HACK_DIR)/cherry-pick-pull.sh
+	@mkdir -p $(REPO_ROOT)/.ci/hack && cp $(GARDENER_HACK_DIR)/.ci/set_dependency_version $(REPO_ROOT)/.ci/hack/set_dependency_version && chmod +xw $(REPO_ROOT)/.ci/hack/set_dependency_version
 
 .PHONY: clean
 clean:
