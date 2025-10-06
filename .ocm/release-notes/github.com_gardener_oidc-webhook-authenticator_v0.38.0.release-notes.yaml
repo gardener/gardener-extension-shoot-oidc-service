@@ -1,3 +1,4 @@
+reference_version: v0.33.0
 ocm:
   component_name: github.com/gardener/oidc-webhook-authenticator
   component_version: v0.38.0
