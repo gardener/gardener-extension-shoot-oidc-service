@@ -52,8 +52,9 @@ spec:
   # This will be the "iss" field of all tokens produced by the provider and is used for configuration discovery.
   issuerURL: https://abc-oidc-provider.example
 
-  # clientID is the audience for which the JWT must be issued for, the "aud" field.
-  clientID: my-shoot-cluster
+  # audiences specifies the list of acceptable audience(s) values ("aud" claim) for the ID token
+  audiences:
+  - my-shoot-cluster
 
   # usernameClaim is the JWT field to use as the user's username.
   usernameClaim: sub

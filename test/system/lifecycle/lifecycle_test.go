@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -107,7 +107,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 			jwks, err := getJWKS(ctx, f.SeedClient.RESTClient(), jwksURL.Path)
 			Expect(err).ToNot(HaveOccurred())
-			clientID := "some-custom-client-id"
+			audiences := []string{"some-custom-client-id"}
 			oidcAPIVersion := "authentication.gardener.cloud/v1alpha1"
 			oidcKind := "OpenIDConnect"
 
@@ -121,7 +121,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 				},
 				"spec": map[string]interface{}{
 					"issuerURL":      oidConfig.Issuer,
-					"clientID":       clientID,
+					"audiences":      audiences,
 					"usernameClaim":  "sub",
 					"usernamePrefix": "custom-prefix:",
 					"jwks": map[string]interface{}{
@@ -141,14 +141,14 @@ var _ = Describe("Shoot oidc service testing", func() {
 
 			// Conversion should be safe
 			spec := oidc.Object["spec"].(map[string]interface{})
-			Expect(spec["clientID"]).To(Equal(clientID))
+			Expect(spec["audiences"]).To(Equal(audiences))
 			Expect(spec["issuerURL"]).To(Equal(oidConfig.Issuer))
 
 			// Get token from seed
 			var ttl int64 = 1800
 			tokenReq, err := f.SeedClient.Kubernetes().CoreV1().ServiceAccounts("default").CreateToken(ctx, "default", &authenticationv1.TokenRequest{
 				Spec: authenticationv1.TokenRequestSpec{
-					Audiences:         []string{clientID},
+					Audiences:         audiences,
 					ExpirationSeconds: &ttl,
 				},
 			}, metav1.CreateOptions{})

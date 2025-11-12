@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,7 +8,8 @@ metadata:
   name: foo-bar
 spec:
   issuerURL: https://some-identity-provider-abc.com
-  clientID: foo-bar
+  audiences:
+  - foo-bar
   usernameClaim: example-claim-email
   usernamePrefix: "identity-abc:"
   groupsClaim: example-claim-groups
