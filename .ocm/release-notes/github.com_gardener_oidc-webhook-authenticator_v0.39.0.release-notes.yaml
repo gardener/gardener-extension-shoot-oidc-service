@@ -1,0 +1,36 @@
+ocm:
+  component_name: github.com/gardener/oidc-webhook-authenticator
+  component_version: v0.39.0
+release_notes:
+- audience: user
+  author:
+    hostname: github.com
+    type: githubUser
+    username: theoddora
+  category: breaking
+  contents: The `clientID` field in the `OpenIDConnect` CRD is now deprecated and
+    replaced by the new `audiences` field, which accepts a list of acceptable audience
+    values for the ID token.
+  mimetype: text/markdown
+  reference: '[#200](https://github.com/gardener/oidc-webhook-authenticator/pull/200)'
+  type: standard
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: dimityrmirchev
+  category: other
+  contents: OWA is now built using go version 1.25.4.
+  mimetype: text/markdown
+  reference: '[#203](https://github.com/gardener/oidc-webhook-authenticator/pull/203)'
+  type: standard
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: theoddora
+  category: other
+  contents: Migrate the test framework from (deprecated) Ginkgo v1 to Ginkgo v2.
+  mimetype: text/markdown
+  reference: '[#198](https://github.com/gardener/oidc-webhook-authenticator/pull/198)'
+  type: standard
