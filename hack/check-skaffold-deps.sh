@@ -18,8 +18,8 @@ function run() {
   fi
 }
 
-run "skaffold.yaml" "gardener-extension-shoot-oidc-service"                    "extension"
-run "skaffold-operator.yaml" "gardener-extension-shoot-oidc-service"           "operator"
+run "skaffold.yaml"           "gardener-extension-shoot-oidc-service"  "extension"
+run "skaffold-operator.yaml"  "gardener-extension-shoot-oidc-service"  "operator"
 
 if ! $success ; then
   exit 1
