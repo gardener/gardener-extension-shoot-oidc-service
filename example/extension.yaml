@@ -9,7 +9,7 @@ spec:
     extension:
       helm:
         ociRepository:
-          ref: local-skaffold/gardener-extension-shoot-oidc-service/charts/extension
+          ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/shoot-oidc-service:v0.35.0-dev
   resources:
   - clusterCompatibility:
     - shoot

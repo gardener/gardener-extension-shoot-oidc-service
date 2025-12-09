@@ -14,7 +14,7 @@ build:
           envTemplate:
             template: "{{.EXTENSION_VERSION}}"
         # inputDigest is used to inject a digest of the artifact source into the built image tag
-        # and therefore into the SKAFFOLD_IMAGE environment variable which is used when generating the corresponding ControllerDeployment
+        # and therefore into the SKAFFOLD_IMAGE environment variable which is used when generating the corresponding Extension
         - name: sha
           inputDigest: {}
   artifacts:
@@ -53,7 +53,7 @@ resourceSelector:
   allow:
     - groupKind: Extension.operator.gardener.cloud
       image:
-        - ".spec.deployment.extension.helm.ociRepository.ref"
+        - .spec.deployment.extension.helm.ociRepository.ref
 manifests:
   kustomize:
     paths:
