@@ -57,6 +57,6 @@ resourceSelector:
 manifests:
   kustomize:
     paths:
-    - example/extension
+    - example/extension/local
 deploy:
   kubectl: {}
