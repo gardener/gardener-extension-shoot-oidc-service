@@ -89,6 +89,7 @@ check-generate:
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
 	@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
+	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(EXTENSION_GEN) $(HELM) $(KUSTOMIZE) $(MOCKGEN) $(VGOPATH) $(YQ)
@@ -132,3 +133,27 @@ test-e2e-local: $(KIND) $(YQ) $(GINKGO)
 .PHONY: oidc-up
 oidc-up: $(KIND) $(YQ)
 	@$(REPO_ROOT)/hack/oidc-up.sh
+
+# speed-up skaffold deployments by building all images concurrently
+export SKAFFOLD_BUILD_CONCURRENCY = 0
+extension-up extension-dev extension-operator-up: export SKAFFOLD_DEFAULT_REPO = garden.local.gardener.cloud:5001
+extension-up extension-dev extension-operator-up: export SKAFFOLD_PUSH = true
+extension-up extension-dev extension-operator-up: export EXTENSION_VERSION = $(VERSION)
+# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
+extension-up extension-dev extension-down extension-operator-up extension-operator-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
+
+extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
+	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
+
+extension-dev: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	$(SKAFFOLD) dev --cleanup=false --trigger=manual
+
+extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	$(SKAFFOLD) delete
+
+extension-operator-up extension-operator-down: export SKAFFOLD_FILENAME = skaffold-operator.yaml
+extension-operator-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(SKAFFOLD) run
+
+extension-operator-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	$(SKAFFOLD) delete

@@ -1,0 +1,61 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+metadata:
+  name: operator
+build:
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
+  tagPolicy:
+    customTemplate:
+      template: "{{.version}}-{{.sha}}"
+      components:
+        - name: version
+          envTemplate:
+            template: "{{.EXTENSION_VERSION}}"
+        # inputDigest is used to inject a digest of the artifact source into the built image tag
+        # and therefore into the SKAFFOLD_IMAGE environment variable which is used when generating the corresponding ControllerDeployment
+        - name: sha
+          inputDigest: {}
+  artifacts:
+    - image: local-skaffold/gardener-extension-shoot-oidc-service
+      ko:
+        dependencies:
+          paths:
+            - cmd/gardener-extension-shoot-oidc-service
+            - cmd/gardener-extension-shoot-oidc-service/app
+            - imagevector
+            - imagevector/images.yaml
+            - pkg/apis/config
+            - pkg/apis/config/v1alpha1
+            - pkg/cmd
+            - pkg/constants
+            - pkg/controller/healthcheck
+            - pkg/controller/lifecycle
+            - pkg/controller/lifecycle/templates/authentication.gardener.cloud_openidconnects.yaml
+            - pkg/secrets
+            - pkg/webhook/kapiserver
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/gardener-extension-shoot-oidc-service
+    - image: local-skaffold/gardener-extension-shoot-oidc-service/charts/extension
+      custom:
+        buildCommand: |
+          bash "$GARDENER_HACK_DIR/push-helm.sh" ./charts/gardener-extension-shoot-oidc-service .image.ref
+        dependencies:
+          paths:
+            - charts/gardener-extension-shoot-oidc-service
+      requires:
+        - image: local-skaffold/gardener-extension-shoot-oidc-service
+          alias: IMG
+resourceSelector:
+  allow:
+    - groupKind: Extension.operator.gardener.cloud
+      image:
+        - ".spec.deployment.extension.helm.ociRepository.ref"
+manifests:
+  kustomize:
+    paths:
+    - example/extension
+deploy:
+  kubectl: {}

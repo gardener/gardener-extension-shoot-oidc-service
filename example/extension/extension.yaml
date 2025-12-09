@@ -5,7 +5,14 @@ metadata:
     security.gardener.cloud/pod-security-enforce: baseline
   name: shoot-oidc-service
 spec:
+  deployment:
+    extension:
+      helm:
+        ociRepository:
+          ref: local-skaffold/gardener-extension-shoot-oidc-service/charts/extension
   resources:
   - kind: Extension
     type: shoot-oidc-service
     workerlessSupported: true
+    clusterCompatibility:
+    - shoot
