@@ -136,7 +136,19 @@ oidc-up: $(KIND) $(YQ)
 
 # speed-up skaffold deployments by building all images concurrently
 export SKAFFOLD_BUILD_CONCURRENCY = 0
-extension-up: export SKAFFOLD_DEFAULT_REPO = garden.local.gardener.cloud:5001
+
+# TODO(vpnachev): Use only registry.local.gardener.cloud:5001 after github.com/gardener/gardener@v1.137.0 is released.
+# ==============
+GARDENER_MINOR_VERSION := $(shell kubectl -n garden get deployments gardener-operator -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null | cut -d ':' -f 3 | cut -d '.' -f 2)
+
+ifeq ($(shell test -n "$(GARDENER_MINOR_VERSION)" -a "$(GARDENER_MINOR_VERSION)" -le 133 && echo true),true)
+skaffold_default_repo := garden.local.gardener.cloud:5001
+else
+skaffold_default_repo := registry.local.gardener.cloud:5001
+endif
+extension-up: export SKAFFOLD_DEFAULT_REPO := $(skaffold_default_repo)
+# extension-up: export SKAFFOLD_DEFAULT_REPO = registry.local.gardener.cloud:5001
+# ==============
 extension-up: export SKAFFOLD_PUSH = true
 extension-up: export EXTENSION_VERSION = $(VERSION)
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
