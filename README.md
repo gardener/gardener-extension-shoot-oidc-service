@@ -49,6 +49,7 @@ Please note, this extension controller relies on the [Gardener-Resource-Manager]
 ## How to start using or developing this extension controller locally
 
 You can run the controller locally on your machine by executing `make start`.
+Alternatively, in a Garden managed with `gardener-operator` the extension can be deployed by executing the command `make extension-up`.
 
 We are using Go modules for Golang package dependency management and [Ginkgo](https://github.com/onsi/ginkgo)/[Gomega](https://github.com/onsi/gomega) for testing.
 

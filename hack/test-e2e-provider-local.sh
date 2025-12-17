@@ -8,11 +8,15 @@ set -o nounset
 set -o pipefail
 set -o errexit
 
-# If running in prow, we need to ensure that garden.local.gardener.cloud resolves to localhost
+# If running in prow, we need to ensure that registry.local.gardener.cloud resolves to localhost
 ensure_glgc_resolves_to_localhost() {
   if [ -n "${CI:-}" ]; then
+    # <<< TODO(vpnachev): Remove after github.com/gardener/gardener v1.137.0 has been released.
     printf "\n127.0.0.1 garden.local.gardener.cloud\n" >> /etc/hosts
     printf "\n::1 garden.local.gardener.cloud\n" >> /etc/hosts
+    # >>>
+    printf "\n127.0.0.1 registry.local.gardener.cloud\n" >> /etc/hosts
+    printf "\n::1 registry.local.gardener.cloud\n" >> /etc/hosts
   fi
 }
 
