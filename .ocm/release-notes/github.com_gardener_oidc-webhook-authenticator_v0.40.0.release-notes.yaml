@@ -1,0 +1,50 @@
+ocm:
+  component_name: github.com/gardener/oidc-webhook-authenticator
+  component_version: v0.40.0
+release_notes:
+- audience: dependency
+  author:
+    hostname: github.com
+    type: githubUser
+    username: dependabot[bot]
+  category: other
+  contents: |-
+    The following third party dependencies have been updated:
+    - sigs.k8s.io/controller-runtime from v0.22.1 -> v0.22.4
+  mimetype: text/markdown
+  reference: '[#210](https://github.com/gardener/oidc-webhook-authenticator/pull/210)'
+  type: standard
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: dependabot[bot]
+  category: other
+  contents: OWA is now built with Go 1.25.5
+  mimetype: text/markdown
+  reference: '[#209](https://github.com/gardener/oidc-webhook-authenticator/pull/209)'
+  type: standard
+- audience: dependency
+  author:
+    hostname: github.com
+    type: githubUser
+    username: dependabot[bot]
+  category: other
+  contents: "The following third party dependencies have been updated:\n- golang.org/x/crypto\
+    \ v0.42.0 -> v0.45.0 \n- golang.org/x/net v0.44.0 -> v0.47.0 \n- golang.org/x/sync\
+    \ v0.17.0 -> v0.18.0 \n- golang.org/x/sys v0.36.0 -> v0.38.0 \n- golang.org/x/term\
+    \ v0.35.0 -> v0.37.0 \n- golang.org/x/text v0.29.0 -> v0.31.0 \n- golang.org/x/tools\
+    \ v0.37.0 -> v0.38.0 "
+  mimetype: text/markdown
+  reference: '[#205](https://github.com/gardener/oidc-webhook-authenticator/pull/205)'
+  type: standard
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: dimityrmirchev
+  category: other
+  contents: The container image base layer has been updated to Debian 13 (trixie).
+  mimetype: text/markdown
+  reference: '[#212](https://github.com/gardener/oidc-webhook-authenticator/pull/212)'
+  type: standard
