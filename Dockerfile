@@ -19,7 +19,7 @@ ARG EFFECTIVE_VERSION
 RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
 
 ############# gardener-extension-shoot-oidc-service
-FROM gcr.io/distroless/static-debian12:nonroot AS gardener-extension-shoot-oidc-service
+FROM gcr.io/distroless/static-debian13:nonroot AS gardener-extension-shoot-oidc-service
 WORKDIR /
 
 COPY --from=builder /go/bin/gardener-extension-shoot-oidc-service /gardener-extension-shoot-oidc-service
