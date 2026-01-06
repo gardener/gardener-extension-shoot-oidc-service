@@ -108,14 +108,14 @@ spec:
         resources:
 {{ toYaml .Values.resources | trim | indent 10 }}
         {{- end }}
-        volumeMounts:
         {{- if .Values.imageVectorOverwrite }}
+        volumeMounts:
         - name: extension-imagevector-overwrite
           mountPath: /charts_overwrite/
           readOnly: true
         {{- end }}
-      volumes:
       {{- if .Values.imageVectorOverwrite }}
+      volumes:
       - name: extension-imagevector-overwrite
         configMap:
           name: gardener-extension-{{ .Values.serviceName }}-imagevector-overwrite
