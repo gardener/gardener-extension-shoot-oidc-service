@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,15 +6,12 @@ package lifecycle
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
-	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 )
 
@@ -34,21 +31,14 @@ var DefaultAddOptions = AddOptions{}
 type AddOptions struct {
 	// ControllerOptions contains options for the controller.
 	ControllerOptions controller.Options
-	// ServiceConfig contains configuration for the shoot OIDC service.
-	ServiceConfig config.Configuration
 	// IgnoreOperationAnnotation specifies whether to ignore the operation annotation or not.
 	IgnoreOperationAnnotation bool
 }
 
 // AddToManager adds a OIDC Service Lifecycle controller to the given Controller Manager.
 func AddToManager(ctx context.Context, mgr manager.Manager) error {
-	clientset, err := kubernetes.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return fmt.Errorf("could not create Kubernetes clientset: %w", err)
-	}
-
 	return extension.Add(mgr, extension.AddArgs{
-		Actuator:          NewActuator(mgr, clientset, DefaultAddOptions.ServiceConfig),
+		Actuator:          NewActuator(mgr),
 		ControllerOptions: DefaultAddOptions.ControllerOptions,
 		Name:              Name,
 		FinalizerSuffix:   FinalizerSuffix,

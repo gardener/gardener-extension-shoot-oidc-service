@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -20,11 +20,9 @@ const ExtensionName = "shoot-oidc-service"
 // Options holds configuration passed to the OIDC Service controller.
 type Options struct {
 	generalOptions     *controllercmd.GeneralOptions
-	oidcOptions        *oidccmd.OIDCServiceOptions
 	restOptions        *controllercmd.RESTOptions
 	managerOptions     *controllercmd.ManagerOptions
 	lifecycleOptions   *controllercmd.ControllerOptions
-	healthOptions      *controllercmd.ControllerOptions
 	controllerSwitches *controllercmd.SwitchOptions
 	reconcileOptions   *controllercmd.ReconcilerOptions
 	heartbeatOptions   *heartbeatcmd.Options
@@ -50,7 +48,6 @@ func NewOptions() *Options {
 
 	options := &Options{
 		generalOptions: &controllercmd.GeneralOptions{},
-		oidcOptions:    &oidccmd.OIDCServiceOptions{},
 		restOptions:    &controllercmd.RESTOptions{},
 		managerOptions: &controllercmd.ManagerOptions{
 			// These are default values.
@@ -63,10 +60,6 @@ func NewOptions() *Options {
 			HealthBindAddress:       ":8081",
 		},
 		lifecycleOptions: &controllercmd.ControllerOptions{
-			// This is a default value.
-			MaxConcurrentReconciles: 5,
-		},
-		healthOptions: &controllercmd.ControllerOptions{
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
@@ -83,11 +76,9 @@ func NewOptions() *Options {
 
 	options.optionAggregator = controllercmd.NewOptionAggregator(
 		options.generalOptions,
-		options.oidcOptions,
 		options.restOptions,
 		options.managerOptions,
 		controllercmd.PrefixOption("lifecycle-", options.lifecycleOptions),
-		controllercmd.PrefixOption("healthcheck-", options.healthOptions),
 		controllercmd.PrefixOption("heartbeat-", options.heartbeatOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
