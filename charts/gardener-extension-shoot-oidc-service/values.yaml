@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -21,8 +21,6 @@ resources:
 
 controllers:
   lifecycle:
-    concurrentSyncs: 5
-  healthcheck:
     concurrentSyncs: 5
   heartbeat:
     renewIntervalSeconds: 30

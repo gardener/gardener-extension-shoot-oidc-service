@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -39,11 +39,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	"k8s.io/client-go/kubernetes"
 	configlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	configv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/utils/clock"
@@ -52,7 +50,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/imagevector"
-	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
 )
@@ -67,22 +64,16 @@ const (
 var crdContent []byte
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(mgr manager.Manager, clientset kubernetes.Interface, config config.Configuration) extension.Actuator {
+func NewActuator(mgr manager.Manager) extension.Actuator {
 	return &actuator{
-		client:        mgr.GetClient(),
-		reader:        mgr.GetAPIReader(),
-		decoder:       serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
-		clientset:     clientset,
-		serviceConfig: config,
+		client: mgr.GetClient(),
+		reader: mgr.GetAPIReader(),
 	}
 }
 
 type actuator struct {
-	client        client.Client
-	reader        client.Reader
-	clientset     kubernetes.Interface
-	decoder       runtime.Decoder
-	serviceConfig config.Configuration
+	client client.Client
+	reader client.Reader
 }
 
 func getOIDCReplicas(ctx context.Context, c client.Client, namespace string, hibernated bool) (*int32, error) {
@@ -565,7 +556,6 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 			},
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -636,7 +626,6 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 			}},
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
