@@ -11,6 +11,9 @@ spec:
         ociRepository:
           ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/shoot-oidc-service:v0.36.0-dev
   resources:
-  - kind: Extension
+  - clusterCompatibility:
+    - garden
+    - shoot
+    kind: Extension
     type: shoot-oidc-service
     workerlessSupported: true

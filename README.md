@@ -42,7 +42,11 @@ spec:
   type: shoot-oidc-service
 ```
 
-When an extension resource is reconciled, the extension controller will create an instance of [OIDC Webhook Authenticator](https://github.com/gardener/oidc-webhook-authenticator). These resources are placed inside the shoot namespace on the seed. Also, the controller takes care about generating necessary `RBAC` resources for the seed as well as for the shoot.
+When an extension resource is reconciled, the extension controller will create an instance of [OIDC Webhook Authenticator](https://github.com/gardener/oidc-webhook-authenticator). 
+- If the extension has class: **shoot**
+These resources are placed inside the shoot namespace on the seed. Also, the controller takes care about generating necessary `RBAC` resources for the seed as well as for the shoot.
+- If the extension has class: **garden**
+These resources are placed inside the garden namespace on the runtime garden cluster. Also, the controller takes care about generating necessary `RBAC` resources for the runtime garden as well as for the virtual garden clusters.
 
 Please note, this extension controller relies on the [Gardener-Resource-Manager](https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md) to deploy k8s resources to seed and shoot clusters.
 

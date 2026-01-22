@@ -6,6 +6,9 @@ metadata:
   name: shoot-oidc-service
 spec:
   resources:
-  - kind: Extension
+  - clusterCompatibility:
+    - garden
+    - shoot
+    kind: Extension
     type: shoot-oidc-service
     workerlessSupported: true
