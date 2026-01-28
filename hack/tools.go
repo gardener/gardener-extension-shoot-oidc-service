@@ -13,6 +13,7 @@ import (
 	_ "github.com/gardener/gardener/hack/.ci"
 	_ "github.com/gardener/gardener/hack/api-reference/template"
 	_ "github.com/gardener/gardener/hack/tools/report-collector"
+	_ "github.com/ironcore-dev/vgopath"
 
 	_ "github.com/ahmetb/gen-crd-api-reference-docs"
 	_ "golang.org/x/tools/cmd/goimports"
