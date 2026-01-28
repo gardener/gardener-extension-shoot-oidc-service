@@ -13,14 +13,10 @@ import (
 	webhook "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/webhook/kapiserver"
 )
 
-const (
-	webhookName = "oidc"
-)
-
 // WebhookSwitchOptions are the webhookcmd.SwitchOptions for the oidc webhooks.
 func WebhookSwitchOptions() *webhookcmd.SwitchOptions {
 	return webhookcmd.NewSwitchOptions(
-		webhookcmd.Switch(webhookName, webhook.New),
+		webhookcmd.Switch(webhook.Name, webhook.New),
 	)
 }
 

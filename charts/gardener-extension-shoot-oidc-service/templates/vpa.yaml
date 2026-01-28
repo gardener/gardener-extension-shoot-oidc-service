@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,7 @@
 apiVersion: "autoscaling.k8s.io/v1"
 kind: VerticalPodAutoscaler
 metadata:
-  name: gardener-extension-{{ .Values.serviceName }}
+  name: gardener-extension-{{ include "name" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   resourcePolicy:
@@ -27,7 +27,7 @@ spec:
   targetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: gardener-extension-{{ .Values.serviceName }}
+    name: gardener-extension-{{ include "name" . }}
   updatePolicy:
     updateMode: {{ .Values.vpa.updatePolicy.updateMode }}
 {{- end }}

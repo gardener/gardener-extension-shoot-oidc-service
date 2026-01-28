@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -17,6 +17,7 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	mockmanager "github.com/gardener/gardener/third_party/mock/controller-runtime/manager"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
@@ -26,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
 )
@@ -114,6 +116,7 @@ var _ = Describe("Mutator", func() {
 			deployment *appsv1.Deployment
 			caSecret   *corev1.Secret
 			ensurer    genericmutator.Ensurer
+			logger     logr.Logger
 		)
 
 		BeforeEach(func() {
@@ -148,6 +151,7 @@ var _ = Describe("Mutator", func() {
 				},
 			}
 
+			logger = log.Log.WithName("oidc-kapiserver-webhook")
 			ctrl = gomock.NewController(GinkgoT())
 			mgr = mockmanager.NewMockManager(ctrl)
 			mgr.EXPECT().GetClient().Return(fakeClient)
@@ -266,7 +270,7 @@ var _ = Describe("Secrets filter", func() {
 			},
 		}
 
-		for i := 0; i < 20; i++ {
+		for range 20 {
 			random.Shuffle(len(secrets), func(i, j int) { secrets[i], secrets[j] = *secrets[j].DeepCopy(), *secrets[i].DeepCopy() })
 
 			newest, err := getLatestIssuedSecret(secrets)

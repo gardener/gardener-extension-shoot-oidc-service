@@ -10,6 +10,7 @@ require (
 	github.com/onsi/gomega v1.39.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.87.1
 	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.10
 	go.uber.org/mock v0.6.0
 	golang.org/x/tools v0.41.0
 	k8s.io/api v0.34.3
@@ -18,6 +19,7 @@ require (
 	k8s.io/client-go v0.34.3
 	k8s.io/code-generator v0.34.3
 	k8s.io/component-base v0.34.3
+	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 	sigs.k8s.io/controller-runtime v0.22.5
 )
@@ -129,7 +131,6 @@ require (
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
@@ -196,7 +197,6 @@ require (
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250820003526-c297c0c1eb9d // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-aggregator v0.34.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/kubelet v0.34.3 // indirect
