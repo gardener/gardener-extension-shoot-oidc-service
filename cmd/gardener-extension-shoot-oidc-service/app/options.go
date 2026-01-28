@@ -42,6 +42,7 @@ func NewOptions() *Options {
 		ExtensionName,
 		"",
 		nil,
+		nil,
 		webhookServerOptions,
 		webhookSwitches,
 	)
