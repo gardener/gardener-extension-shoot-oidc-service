@@ -6,7 +6,6 @@ require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gardener/gardener v1.135.0
 	github.com/go-logr/logr v1.4.3
-	github.com/ironcore-dev/vgopath v0.1.5
 	github.com/onsi/ginkgo/v2 v2.27.1
 	github.com/onsi/gomega v1.39.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.87.1
