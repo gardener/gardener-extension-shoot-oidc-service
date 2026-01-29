@@ -5,6 +5,10 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 5
+  commit-message:
+    prefix: "chore(deps):"
+  labels:
+    - "kind/enhancement"
   allow:
   - dependency-name: "github.com/gardener/gardener"
 - package-ecosystem: docker
@@ -13,3 +17,7 @@ updates:
   - /.test-defs
   schedule:
     interval: daily
+  commit-message:
+    prefix: "chore(deps):"
+  labels:
+    - "kind/enhancement"
