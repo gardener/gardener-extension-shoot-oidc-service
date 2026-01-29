@@ -6,15 +6,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gardener-extension-{{ .Values.serviceName }}
+  name: gardener-extension-{{ include "name" . }}
   namespace: {{ .Release.Namespace }}
 {{- if .Values.ignoreResources }}
   annotations:
     resources.gardener.cloud/ignore: "true"
 {{- end }}
   labels:
-    app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
-    helm.sh/chart: gardener-extension-{{ .Values.serviceName }}
+    app.kubernetes.io/name: gardener-extension-{{ include "name" . }}
+    helm.sh/chart: gardener-extension-{{ include "name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     high-availability-config.resources.gardener.cloud/type: server
 spec:
@@ -22,7 +22,7 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
+      app.kubernetes.io/name: gardener-extension-{{ include "name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
@@ -38,7 +38,7 @@ spec:
         prometheus.io/port: "{{ .Values.metrics.port }}"
       {{- end }}
       labels:
-        app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
+        app.kubernetes.io/name: gardener-extension-{{ include "name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         networking.gardener.cloud/to-runtime-apiserver: allowed
         networking.gardener.cloud/to-dns: allowed
@@ -52,17 +52,21 @@ spec:
               - key: app.kubernetes.io/name
                 operator: In
                 values:
-                - gardener-extension-{{ .Values.serviceName }}
+                - gardener-extension-{{ include "name" . }}
               - key: app.kubernetes.io/instance
                 operator: In
                 values:
                 - {{ .Release.Name }}
             topologyKey: "kubernetes.io/hostname"
       {{- end }}
+      {{- if .Values.gardener.runtimeCluster.enabled }}
+      priorityClassName: {{ .Values.gardener.runtimeCluster.priorityClassName }}
+      {{- else }}
       priorityClassName: gardener-system-900
-      serviceAccountName: gardener-extension-{{ .Values.serviceName }}
+      {{- end }}
+      serviceAccountName: gardener-extension-{{ include "name" . }}
       containers:
-      - name: gardener-extension-{{ .Values.serviceName }}
+      - name: gardener-extension-{{ include "name" . }}
         image: {{ include "image" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         securityContext:
@@ -79,6 +83,11 @@ spec:
         - --gardener-version={{ .Values.gardener.version }}
         - --metrics-bind-address=:{{ .Values.metrics.port }}
         - --health-bind-address=:{{ .Values.healthPort }}
+        {{- if .Values.gardener.runtimeCluster.enabled }}
+        - --extension-classes=garden
+        {{- else }}
+        - --extension-classes=shoot
+        {{- end }}
         ports:
         - name: webhook-server
           containerPort: {{ .Values.webhookConfig.serverPort }}
@@ -100,6 +109,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: WEBHOOK_CONFIG_NAMESPACE
+          value: {{ .Release.Namespace }}
         {{- if .Values.imageVectorOverwrite }}
         - name: IMAGEVECTOR_OVERWRITE
           value: /charts_overwrite/images_overwrite.yaml
@@ -118,6 +129,6 @@ spec:
       volumes:
       - name: extension-imagevector-overwrite
         configMap:
-          name: gardener-extension-{{ .Values.serviceName }}-imagevector-overwrite
+          name: gardener-extension-{{ include "name" . }}-imagevector-overwrite
           defaultMode: 420
       {{- end }}
