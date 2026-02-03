@@ -42,8 +42,8 @@ const (
 	// ActuatorName is the name of the OIDC Service actuator.
 	ActuatorName = constants.ServiceName + "-actuator"
 
-	// InitialOIDCReplicaCount is the initial number of OIDC webhook replicas
-	InitialOIDCReplicaCount int32 = 2
+	// initialOIDCReplicaCount is the initial number of OIDC webhook replicas
+	initialOIDCReplicaCount int32 = 2
 
 	// fakeTokenSecretName is a temporary constant for a secret that was used in older versions
 	fakeTokenSecretName = constants.ApplicationName + "-fake-token" // <- TODO: remove this constant in a future release
@@ -239,7 +239,7 @@ func (a *actuator) buildGardenClusterContext(ctx context.Context, log logr.Logge
 		clock.RealClock{},
 		a.client,
 		garden,
-		secrets.ManagerIdentity,
+		secrets.ManagerIdentityRuntime,
 		configs,
 		namespace,
 	)
@@ -323,7 +323,7 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, ex *extensionsv1
 			return fmt.Errorf("failed to get garden: %w", err)
 		}
 
-		secretsManager, err = extensionssecretsmanager.SecretsManagerForGarden(ctx, log.WithName("secretsmanager"), clock.RealClock{}, a.client, garden, secrets.ManagerIdentity, nil, namespace)
+		secretsManager, err = extensionssecretsmanager.SecretsManagerForGarden(ctx, log.WithName("secretsmanager"), clock.RealClock{}, a.client, garden, secrets.ManagerIdentityRuntime, nil, namespace)
 		if err != nil {
 			return err
 		}
@@ -383,7 +383,7 @@ func (a *actuator) getOIDCReplicas(ctx context.Context, clusterCtx *clusterConte
 	switch {
 	case err != nil && apierrors.IsNotFound(err):
 		// Scale to initial replica count
-		return ptr.To(InitialOIDCReplicaCount), nil
+		return ptr.To(initialOIDCReplicaCount), nil
 	case err != nil:
 		// Error cannot be handled here so pass it to the caller function
 		return ptr.To[int32](0), err
@@ -392,9 +392,9 @@ func (a *actuator) getOIDCReplicas(ctx context.Context, clusterCtx *clusterConte
 		return oidcDeployment.Spec.Replicas, nil
 	case oidcDeployment.Spec.Replicas != nil && *oidcDeployment.Spec.Replicas == 0:
 		// Wake up oidc deployment with initial replica count
-		return ptr.To(InitialOIDCReplicaCount), nil
+		return ptr.To(initialOIDCReplicaCount), nil
 	default:
-		return ptr.To(InitialOIDCReplicaCount), nil
+		return ptr.To(initialOIDCReplicaCount), nil
 	}
 }
 

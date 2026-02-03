@@ -5,6 +5,7 @@
 package kapiserver
 
 import (
+	"errors"
 	"slices"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -18,6 +19,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
 )
 
 const (
@@ -41,11 +44,37 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger := mgr.GetLogger().WithName("oidc-kapiserver-webhook")
 	logger.Info("Adding webhook to manager")
 
+	// We support only a single extension class at a time.
+	if len(DefaultAddOptions.ExtensionClasses) > 1 {
+		return nil, errors.New("only a single extension class is supported at a time")
+	}
+
+	var (
+		// The namespace selector is adjusted based on the configured extension class.
+		namespaceLabelSelectorRequirement metav1.LabelSelectorRequirement
+		secretsManagerIdentity            string
+	)
+	if len(DefaultAddOptions.ExtensionClasses) == 0 || slices.Contains(DefaultAddOptions.ExtensionClasses, extensionsv1alpha1.ExtensionClassShoot) {
+		namespaceLabelSelectorRequirement = metav1.LabelSelectorRequirement{
+			Key:      v1beta1constants.LabelExtensionPrefix + "shoot-oidc-service",
+			Operator: metav1.LabelSelectorOpIn,
+			Values:   []string{"true"},
+		}
+		secretsManagerIdentity = secrets.ManagerIdentity
+	} else if slices.Contains(DefaultAddOptions.ExtensionClasses, extensionsv1alpha1.ExtensionClassGarden) {
+		namespaceLabelSelectorRequirement = metav1.LabelSelectorRequirement{
+			Key:      corev1.LabelMetadataName,
+			Operator: metav1.LabelSelectorOpIn,
+			Values:   []string{v1beta1constants.GardenNamespace},
+		}
+		secretsManagerIdentity = secrets.ManagerIdentityRuntime
+	}
+
 	fciCodec := oscutils.NewFileContentInlineCodec()
 
 	mutator := genericmutator.NewMutator(
 		mgr,
-		NewEnsurer(mgr, logger),
+		NewEnsurer(mgr, logger, secretsManagerIdentity),
 		oscutils.NewUnitSerializer(),
 		kubelet.NewConfigCodec(fciCodec),
 		fciCodec,
@@ -58,23 +87,6 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	handler, err := extensionswebhook.NewBuilder(mgr, logger).WithMutator(mutator, types...).Build()
 	if err != nil {
 		return nil, err
-	}
-
-	// We support only a single extension class at a time.
-	// The namespace selector is adjusted based on the configured extension class.
-	var namespaceLabelSelectorRequirement metav1.LabelSelectorRequirement
-	if len(DefaultAddOptions.ExtensionClasses) == 0 || slices.Contains(DefaultAddOptions.ExtensionClasses, extensionsv1alpha1.ExtensionClassShoot) {
-		namespaceLabelSelectorRequirement = metav1.LabelSelectorRequirement{
-			Key:      v1beta1constants.LabelExtensionPrefix + "shoot-oidc-service",
-			Operator: metav1.LabelSelectorOpIn,
-			Values:   []string{"true"},
-		}
-	} else if slices.Contains(DefaultAddOptions.ExtensionClasses, extensionsv1alpha1.ExtensionClassGarden) {
-		namespaceLabelSelectorRequirement = metav1.LabelSelectorRequirement{
-			Key:      corev1.LabelMetadataName,
-			Operator: metav1.LabelSelectorOpIn,
-			Values:   []string{"garden"},
-		}
 	}
 
 	webhook := &extensionswebhook.Webhook{

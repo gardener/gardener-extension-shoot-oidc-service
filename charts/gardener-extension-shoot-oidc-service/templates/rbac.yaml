@@ -82,9 +82,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  {{- if .Values.gardener.runtimeCluster.enabled }}
-  - operator.gardener.cloud
-  {{- end }}
   - extensions.gardener.cloud
   resources:
   - extensions

@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/secrets"
 )
 
 var _ = Describe("Mutator", func() {
@@ -155,7 +156,7 @@ var _ = Describe("Mutator", func() {
 			ctrl = gomock.NewController(GinkgoT())
 			mgr = mockmanager.NewMockManager(ctrl)
 			mgr.EXPECT().GetClient().Return(fakeClient)
-			ensurer = NewEnsurer(mgr, logger)
+			ensurer = NewEnsurer(mgr, logger, secrets.ManagerIdentity)
 		})
 
 		It("should add missing flags to a kube-apiserver pod", func() {
