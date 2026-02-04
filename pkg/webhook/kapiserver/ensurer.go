@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
@@ -40,13 +39,10 @@ const (
 
 type ensurer struct {
 	genericmutator.NoopEnsurer
-	client client.Client
-	logger logr.Logger
+	client                 client.Client
+	logger                 logr.Logger
+	secretsManagerIdentity string
 }
-
-// NewSecretsManager is an alias for extensionssecretsmanager.SecretsManagerForCluster.
-// exposed for testing
-var NewSecretsManager = extensionssecretsmanager.SecretsManagerForCluster
 
 // EnsureKubeAPIServerDeployment ensures that the kube-apiserver deployment conforms to the oidc-webhook-authenticator requirements.
 func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.GardenContext, newDeployment, _ *appsv1.Deployment) error {
@@ -66,7 +62,7 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 		}
 
 		// we expect that the CA bundle secret is handled by the lifecycle controller
-		caBundleSecret, err := getLatestIssuedCABundleSecret(ctx, e.client, newDeployment.Namespace)
+		caBundleSecret, err := e.getLatestIssuedCABundleSecret(ctx, e.client, newDeployment.Namespace)
 		if err != nil {
 			return err
 		}
@@ -79,10 +75,11 @@ func (e *ensurer) EnsureKubeAPIServerDeployment(ctx context.Context, _ gcontext.
 }
 
 // NewEnsurer creates a new oidc mutator.
-func NewEnsurer(mgr manager.Manager, logger logr.Logger) genericmutator.Ensurer {
+func NewEnsurer(mgr manager.Manager, logger logr.Logger, secretsManagerIdentity string) genericmutator.Ensurer {
 	return &ensurer{
-		client: mgr.GetClient(),
-		logger: logger.WithName("oidc-controlplane-ensurer"),
+		client:                 mgr.GetClient(),
+		logger:                 logger.WithName("oidc-controlplane-ensurer"),
+		secretsManagerIdentity: secretsManagerIdentity,
 	}
 }
 
@@ -141,12 +138,12 @@ func ensureKubeAPIServerIsMutated(ps *corev1.PodSpec, c *corev1.Container, caBun
 }
 
 // getLatestIssuedCABundleSecret returns the oidc-webhook latest CA bundle secret
-func getLatestIssuedCABundleSecret(ctx context.Context, c client.Client, namespace string) (*corev1.Secret, error) {
+func (e *ensurer) getLatestIssuedCABundleSecret(ctx context.Context, c client.Client, namespace string) (*corev1.Secret, error) {
 	secretList := &corev1.SecretList{}
 	if err := c.List(ctx, secretList, client.InNamespace(namespace), client.MatchingLabels{
 		secretsmanager.LabelKeyBundleFor:       secrets.CAName,
 		secretsmanager.LabelKeyManagedBy:       secretsmanager.LabelValueSecretsManager,
-		secretsmanager.LabelKeyManagerIdentity: secrets.ManagerIdentity,
+		secretsmanager.LabelKeyManagerIdentity: e.secretsManagerIdentity,
 	}); err != nil {
 		return nil, err
 	}
@@ -161,7 +158,7 @@ func getLatestIssuedSecret(secrets []corev1.Secret) (*corev1.Secret, error) {
 
 	var newestSecret *corev1.Secret
 	var currentIssuedAtTime time.Time
-	for i := 0; i < len(secrets); i++ {
+	for i := range secrets {
 		// if some of the secrets have no "issued-at-time" label
 		// we have a problem since this is the source of truth
 		issuedAt, ok := secrets[i].Labels[secretsmanager.LabelKeyIssuedAtTime]

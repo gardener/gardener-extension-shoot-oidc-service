@@ -13,3 +13,11 @@
 {{- define "leaderelectionid" -}}
 extension-shoot-oidc-service-leader-election
 {{- end -}}
+
+{{- define "name" -}}
+{{- if .Values.gardener.runtimeCluster.enabled -}}
+shoot-oidc-service-runtime
+{{- else -}}
+shoot-oidc-service
+{{- end -}}
+{{- end -}}

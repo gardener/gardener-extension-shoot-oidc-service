@@ -8,7 +8,6 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
-serviceName: shoot-oidc-service
 replicaCount: 1
 
 resources:
@@ -46,6 +45,8 @@ vpa:
 
 gardener:
   version: ""
+  runtimeCluster:
+    enabled: false
 
 healthPort: 8081
 

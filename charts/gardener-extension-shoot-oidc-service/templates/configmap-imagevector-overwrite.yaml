@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,10 +7,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gardener-extension-{{ .Values.serviceName }}-imagevector-overwrite
+  name: gardener-extension-{{ include "name" . }}-imagevector-overwrite
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
+    app.kubernetes.io/name: gardener-extension-{{ include "name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 data:
   images_overwrite.yaml: |
