@@ -3,9 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ############# builder
-FROM golang:1.25.7 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25.7 AS builder
 
-ARG TARGETARCH
 WORKDIR /go/src/github.com/gardener/gardener-extension-shoot-oidc-service
 
 # Copy go mod and sum files
@@ -15,12 +14,14 @@ RUN go mod download
 
 COPY . .
 
+ARG TARGETOS
+ARG TARGETARCH
 ARG EFFECTIVE_VERSION
-RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
+RUN make build EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOOS=$TARGETOS GOARCH=$TARGETARCH BUILD_OUTPUT_FILE="/output/bin/"
 
 ############# gardener-extension-shoot-oidc-service
 FROM gcr.io/distroless/static-debian13:nonroot AS gardener-extension-shoot-oidc-service
 WORKDIR /
 
-COPY --from=builder /go/bin/gardener-extension-shoot-oidc-service /gardener-extension-shoot-oidc-service
+COPY --from=builder /output/bin/gardener-extension-shoot-oidc-service /gardener-extension-shoot-oidc-service
 ENTRYPOINT ["/gardener-extension-shoot-oidc-service"]
