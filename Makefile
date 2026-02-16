@@ -13,7 +13,7 @@ HACK_DIR                    := $(REPO_ROOT)/hack
 VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
-GOARCH                      ?= $(shell go env GOARCH)
+TARGET_PLATFORMS            ?= linux/$(shell go env GOARCH)
 EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    := "-w $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(EXTENSION_PREFIX))"
 
@@ -56,7 +56,14 @@ start:
 .PHONY: install
 install:
 	@LD_FLAGS=$(LD_FLAGS) EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
-	bash $(GARDENER_HACK_DIR)/install.sh ./...
+		bash $(GARDENER_HACK_DIR)/install.sh ./...
+
+BUILD_OUTPUT_FILE ?= .
+
+.PHONY: build
+build:
+	@LD_FLAGS=$(LD_FLAGS) EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
+		bash $(GARDENER_HACK_DIR)/build.sh -o $(BUILD_OUTPUT_FILE) ./...
 
 .PHONY: docker-login
 docker-login:
@@ -64,7 +71,7 @@ docker-login:
 
 .PHONY: docker-images
 docker-images:
-	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) --build-arg TARGETARCH=$(GOARCH) -t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
+	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) --platform=$(TARGET_PLATFORMS) -t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
