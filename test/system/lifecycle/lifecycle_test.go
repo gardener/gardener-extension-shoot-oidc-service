@@ -282,7 +282,7 @@ func getJWKS(ctx context.Context, client rest.Interface, relativeURI string) ([]
 }
 
 func requestAPIServer(ctx context.Context, caBundle []byte, apiserverURL, bearerToken string) (*metav1.Status, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", apiserverURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiserverURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func requestAPIServer(ctx context.Context, caBundle []byte, apiserverURL, bearer
 		},
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- apiserverURL is controlled in tests, not user input
 	if err != nil {
 		return nil, err
 	}
