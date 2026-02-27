@@ -243,10 +243,18 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 		Spec: monitoringv1.ServiceMonitorSpec{
 			Selector: metav1.LabelSelector{MatchLabels: getLabels()},
 			Endpoints: []monitoringv1.Endpoint{{
-				Port:                 "https",
-				Scheme:               ptr.To(monitoringv1.SchemeHTTPS),
-				HonorLabels:          false,
-				TLSConfig:            &monitoringv1.TLSConfig{SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)}},
+				Port:        "https",
+				Scheme:      ptr.To(monitoringv1.SchemeHTTPS),
+				HonorLabels: false,
+				HTTPConfigWithProxyAndTLSFiles: monitoringv1.HTTPConfigWithProxyAndTLSFiles{
+					HTTPConfigWithTLSFiles: monitoringv1.HTTPConfigWithTLSFiles{
+						TLSConfig: &monitoringv1.TLSConfig{
+							SafeTLSConfig: monitoringv1.SafeTLSConfig{
+								InsecureSkipVerify: ptr.To(true),
+							},
+						},
+					},
+				},
 				MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("oidc_webhook_authenticator_.+"),
 			}},
 		},
