@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -6,7 +6,7 @@
 images:
 - name: oidc-webhook-authenticator
   sourceRepository: github.com/gardener/oidc-webhook-authenticator
-  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/oidc-webhook-authenticator
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/oidc-webhook-authenticator
   tag: "v0.42.0"
   labels:
   - name: 'cloud.gardener.cnudie/responsibles'
@@ -15,3 +15,5 @@ images:
       username: 'dimityrmirchev'
     - type: 'githubUser'
       email: 'vpnachev'
+    - type: 'githubUser'
+      email: 'theoddora'
