@@ -11,6 +11,12 @@ updates:
     - "kind/enhancement"
   allow:
   - dependency-name: "github.com/gardener/gardener"
+  - dependency-name: "github.com/gardener/gardener/pkg/apis"
+  groups:
+    gardener:
+      patterns:
+        - "github.com/gardener/gardener"
+        - "github.com/gardener/gardener/pkg/apis"
 - package-ecosystem: docker
   directories:
   - /
