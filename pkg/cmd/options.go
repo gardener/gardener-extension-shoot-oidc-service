@@ -12,6 +12,7 @@ import (
 
 	healthcheckcontroller "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/lifecycle"
+	trustconfigurator "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/trustconfigurator"
 	webhook "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/webhook/kapiserver"
 )
 
@@ -28,5 +29,6 @@ func ControllerSwitches() *cmd.SwitchOptions {
 		cmd.Switch(lifecycle.Name, lifecycle.AddToManager),
 		cmd.Switch(extensionshealthcheckcontroller.ControllerName, healthcheckcontroller.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
+		cmd.Switch(trustconfigurator.Name, trustconfigurator.AddToManager),
 	)
 }

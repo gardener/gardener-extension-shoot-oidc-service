@@ -39,9 +39,6 @@ import (
 )
 
 const (
-	// ActuatorName is the name of the OIDC Service actuator.
-	ActuatorName = constants.ServiceName + "-actuator"
-
 	// initialOIDCReplicaCount is the initial number of OIDC webhook replicas
 	initialOIDCReplicaCount int32 = 2
 

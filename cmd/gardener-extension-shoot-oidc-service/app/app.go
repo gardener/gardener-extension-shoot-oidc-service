@@ -29,6 +29,7 @@ import (
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/lifecycle"
+	trustconfigurator "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/trustconfigurator"
 	webhook "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/webhook/kapiserver"
 )
 
@@ -108,8 +109,10 @@ func (o *Options) run(ctx context.Context, log logr.Logger) error {
 
 	o.lifecycleOptions.Completed().Apply(&lifecycle.DefaultAddOptions.ControllerOptions)
 	o.reconcileOptions.Completed().Apply(&lifecycle.DefaultAddOptions.IgnoreOperationAnnotation, &lifecycle.DefaultAddOptions.ExtensionClasses)
-	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
+	o.reconcileOptions.Completed().Apply(&trustconfigurator.DefaultAddOptions.IgnoreOperationAnnotation, &trustconfigurator.DefaultAddOptions.ExtensionClasses)
+	o.trustConfiguratorOptions.Completed().Apply(&trustconfigurator.DefaultAddOptions)
 	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
+	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 	webhook.DefaultAddOptions.ExtensionClasses = o.reconcileOptions.Completed().ExtensionClasses
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {

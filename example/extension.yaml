@@ -17,3 +17,7 @@ spec:
     kind: Extension
     type: shoot-oidc-service
     workerlessSupported: true
+  - clusterCompatibility:
+    - garden
+    kind: Extension
+    type: garden-shoot-trust-configurator

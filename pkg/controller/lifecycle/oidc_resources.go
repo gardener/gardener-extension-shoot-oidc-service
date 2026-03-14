@@ -136,6 +136,12 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 					AutomountServiceAccountToken: ptr.To(false),
 					ServiceAccountName:           constants.ApplicationName,
 					PriorityClassName:            priorityClassName,
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsNonRoot: ptr.To(true),
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
+						},
+					},
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
 						Image:           image.String(),
@@ -273,6 +279,30 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 		},
 	}
 
+	vpa := &vpaautoscalingv1.VerticalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.ApplicationName,
+			Namespace: namespace,
+			Labels:    getLabels(),
+		},
+		Spec: vpaautoscalingv1.VerticalPodAutoscalerSpec{
+			TargetRef: &autoscalingv1.CrossVersionObjectReference{
+				APIVersion: appsv1.SchemeGroupVersion.String(),
+				Kind:       "Deployment",
+				Name:       constants.ApplicationName,
+			},
+			UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
+				UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeRecreate),
+			},
+			ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
+				ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{{
+					ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
+					ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
+				}},
+			},
+		},
+	}
+
 	resources, err := registry.AddAllAndSerialize(
 		&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
@@ -284,7 +314,7 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 		},
 		pdb,
 		oidcDeployment,
-		buildVPA(namespace),
+		vpa,
 		service,
 		serviceMonitor,
 		&corev1.Secret{
@@ -306,9 +336,11 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 }
 
 func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAccountName string) (map[string][]byte, error) {
-	failPolicy := admissionregistration.Fail
-	sideEffectClass := admissionregistration.SideEffectClassNone
-	validatingWebhookURL := fmt.Sprintf("https://%s.%s/webhooks/validating", constants.ApplicationName, namespace)
+	var (
+		failPolicy           = admissionregistration.Fail
+		sideEffectClass      = admissionregistration.SideEffectClassNone
+		validatingWebhookURL = fmt.Sprintf("https://%s.%s/webhooks/validating", constants.ApplicationName, namespace)
+	)
 
 	shootRegistry := managedresources.NewRegistry(gardenerkubernetes.ShootScheme, gardenerkubernetes.ShootCodec, gardenerkubernetes.ShootSerializer)
 	shootResources, err := shootRegistry.AddAllAndSerialize(
@@ -374,32 +406,6 @@ func getShootResources(webhookCaBundle []byte, namespace, shootAccessServiceAcco
 
 	shootResources["crd.yaml"] = crdContent
 	return shootResources, nil
-}
-
-func buildVPA(namespace string) *vpaautoscalingv1.VerticalPodAutoscaler {
-	return &vpaautoscalingv1.VerticalPodAutoscaler{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.ApplicationName,
-			Namespace: namespace,
-			Labels:    getLabels(),
-		},
-		Spec: vpaautoscalingv1.VerticalPodAutoscalerSpec{
-			TargetRef: &autoscalingv1.CrossVersionObjectReference{
-				APIVersion: appsv1.SchemeGroupVersion.String(),
-				Kind:       "Deployment",
-				Name:       constants.ApplicationName,
-			},
-			UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
-				UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeRecreate),
-			},
-			ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
-				ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{{
-					ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
-					ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
-				}},
-			},
-		},
-	}
 }
 
 func getLabels() map[string]string {
