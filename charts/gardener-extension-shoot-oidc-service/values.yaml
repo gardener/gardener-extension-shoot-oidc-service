@@ -24,6 +24,12 @@ controllers:
   heartbeat:
     renewIntervalSeconds: 30
   ignoreOperationAnnotation: false
+  trustConfigurator:
+    concurrentSyncs: 5
+    oidcConfig:
+      audiences:
+      - garden
+      maxTokenExpiration: 2h
 
 webhookConfig:
   servicePort: 443
@@ -61,3 +67,7 @@ imageVectorOverwrite: {}
   #   sourceRepository: github.com/gardener/oidc-webhook-authenticator
   #   repository: europe-docker.pkg.dev/gardener-project/releases/gardener/oidc-webhook-authenticator
   #   tag: "v0.32.0"
+  # - name: garden-shoot-trust-configurator
+  #   sourceRepository: github.com/gardener/garden-shoot-trust-configurator
+  #   repository: europe-docker.pkg.dev/gardener-project/releases/gardener/garden-shoot-trust-configurator
+  #   tag: "v0.1.0"

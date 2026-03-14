@@ -10,6 +10,7 @@ import (
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 
 	"github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/lifecycle"
+	trustconfigurator "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/controller/trust-configurator"
 	webhook "github.com/gardener/gardener-extension-shoot-oidc-service/pkg/webhook/kapiserver"
 )
 
@@ -25,5 +26,6 @@ func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
 		cmd.Switch(lifecycle.Name, lifecycle.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
+		cmd.Switch(trustconfigurator.Name, trustconfigurator.AddToManager),
 	)
 }

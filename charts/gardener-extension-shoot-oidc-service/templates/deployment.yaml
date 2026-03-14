@@ -73,6 +73,11 @@ spec:
           allowPrivilegeEscalation: false
         args:
         - --lifecycle-max-concurrent-reconciles={{ .Values.controllers.lifecycle.concurrentSyncs }}
+        - --trust-configurator-max-concurrent-reconciles={{ .Values.controllers.trustConfigurator.concurrentSyncs }}
+        {{- range .Values.controllers.trustConfigurator.oidcConfig.audiences }}
+        - --trust-configurator-oidc-audiences={{ . }}
+        {{- end }}
+        - --trust-configurator-oidc-max-token-expiration={{ .Values.controllers.trustConfigurator.oidcConfig.maxTokenExpiration }}
         - --ignore-operation-annotation={{ .Values.controllers.ignoreOperationAnnotation }}
         - --leader-election-id={{ include "leaderelectionid" . }}
         - --heartbeat-namespace={{ .Release.Namespace }}
@@ -87,6 +92,7 @@ spec:
         - --extension-classes=garden
         {{- else }}
         - --extension-classes=shoot
+        - --disable-controllers=garden-shoot-trust-configurator
         {{- end }}
         ports:
         - name: webhook-server
