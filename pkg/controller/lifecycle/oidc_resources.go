@@ -136,6 +136,12 @@ func getSeedResources(oidcReplicas *int32, namespace, genericKubeconfigName, sho
 					AutomountServiceAccountToken: ptr.To(false),
 					ServiceAccountName:           constants.ApplicationName,
 					PriorityClassName:            priorityClassName,
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsNonRoot: ptr.To(true),
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
+						},
+					},
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
 						Image:           image.String(),

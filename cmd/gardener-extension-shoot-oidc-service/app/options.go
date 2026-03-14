@@ -19,15 +19,16 @@ const ExtensionName = "shoot-oidc-service"
 
 // Options holds configuration passed to the OIDC Service controller.
 type Options struct {
-	generalOptions     *controllercmd.GeneralOptions
-	restOptions        *controllercmd.RESTOptions
-	managerOptions     *controllercmd.ManagerOptions
-	lifecycleOptions   *controllercmd.ControllerOptions
-	controllerSwitches *controllercmd.SwitchOptions
-	reconcileOptions   *controllercmd.ReconcilerOptions
-	heartbeatOptions   *heartbeatcmd.Options
-	webhookOptions     *webhookcmd.AddToManagerOptions
-	optionAggregator   controllercmd.OptionAggregator
+	generalOptions           *controllercmd.GeneralOptions
+	restOptions              *controllercmd.RESTOptions
+	managerOptions           *controllercmd.ManagerOptions
+	lifecycleOptions         *controllercmd.ControllerOptions
+	controllerSwitches       *controllercmd.SwitchOptions
+	reconcileOptions         *controllercmd.ReconcilerOptions
+	trustConfiguratorOptions *oidccmd.TrustConfiguratorOptions
+	heartbeatOptions         *heartbeatcmd.Options
+	webhookOptions           *webhookcmd.AddToManagerOptions
+	optionAggregator         controllercmd.OptionAggregator
 }
 
 // NewOptions creates a new Options instance.
@@ -70,7 +71,13 @@ func NewOptions() *Options {
 			RenewIntervalSeconds: 30,
 			Namespace:            os.Getenv("LEADER_ELECTION_NAMESPACE"),
 		},
-		reconcileOptions:   &controllercmd.ReconcilerOptions{},
+		reconcileOptions: &controllercmd.ReconcilerOptions{},
+		trustConfiguratorOptions: &oidccmd.TrustConfiguratorOptions{
+			ControllerOptions: controllercmd.ControllerOptions{
+				// This is a default value.
+				MaxConcurrentReconciles: 5,
+			},
+		},
 		controllerSwitches: oidccmd.ControllerSwitches(),
 		webhookOptions:     webhookOptions,
 	}
@@ -81,6 +88,7 @@ func NewOptions() *Options {
 		options.managerOptions,
 		controllercmd.PrefixOption("lifecycle-", options.lifecycleOptions),
 		controllercmd.PrefixOption("heartbeat-", options.heartbeatOptions),
+		controllercmd.PrefixOption("trust-configurator-", options.trustConfiguratorOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
 		options.webhookOptions,
