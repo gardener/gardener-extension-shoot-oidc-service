@@ -73,6 +73,7 @@ spec:
           allowPrivilegeEscalation: false
         args:
         - --lifecycle-max-concurrent-reconciles={{ .Values.controllers.lifecycle.concurrentSyncs }}
+        - --healthcheck-max-concurrent-reconciles={{ .Values.controllers.healthcheck.concurrentSyncs }}
         - --ignore-operation-annotation={{ .Values.controllers.ignoreOperationAnnotation }}
         - --leader-election-id={{ include "leaderelectionid" . }}
         - --heartbeat-namespace={{ .Release.Namespace }}
@@ -85,6 +86,7 @@ spec:
         - --health-bind-address=:{{ .Values.healthPort }}
         {{- if .Values.gardener.runtimeCluster.enabled }}
         - --extension-classes=garden
+        - --disable-controllers=healthcheck
         {{- else }}
         - --extension-classes=shoot
         {{- end }}
