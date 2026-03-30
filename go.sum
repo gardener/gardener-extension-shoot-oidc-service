@@ -899,8 +899,8 @@ github.com/gardener/cert-management v0.19.0 h1:BNumdw748Pg9798NzxHmmpKuXFRLHSPuv
 github.com/gardener/cert-management v0.19.0/go.mod h1:u5OKwiDyUdCuW9vhDV92ozCVkynXUBrYCMHr4rVNiCY=
 github.com/gardener/etcd-druid/api v0.36.1 h1:vO4WISqEW7T/s9vgrbVkfdyEfvQ9fiZgQOJQBmiM8hk=
 github.com/gardener/etcd-druid/api v0.36.1/go.mod h1:RwZzKp8K415AS0zg8VoODjBxYepCAUYyLgXnZc1bmbo=
-github.com/gardener/garden-shoot-trust-configurator v0.0.0-20260309070552-990fd1853dcb h1:l2wSFs1EaHaVj4vbrTsEJ4ZuRmf9vp6E9n1Uv8mxQ2U=
-github.com/gardener/garden-shoot-trust-configurator v0.0.0-20260309070552-990fd1853dcb/go.mod h1:yxLkOeF8PCVnUcvzvGjVvx/k9xRFvMCxZbgC2iF4ubU=
+github.com/gardener/garden-shoot-trust-configurator v0.1.0 h1:yPDuHCY/6fb3JFS3+keplG1NUUHcoBANBPFxUHZN9ls=
+github.com/gardener/garden-shoot-trust-configurator v0.1.0/go.mod h1:W3TQtpuPNy4QshikGFD0CNLY9efT80h2NcjBVcA7O0c=
 github.com/gardener/gardener v1.139.0 h1:9z2ax0eaKjbr4oOgkxLHxTCSj5y+qNSZHPTzwsDl9Fg=
 github.com/gardener/gardener v1.139.0/go.mod h1:ZctdCaMzuyqf/GKM2kL5FM3HWVG2zGg3U+7+t6tN3Wc=
 github.com/gardener/gardener/pkg/apis v1.139.0 h1:tzHkPEAwcGImgBqKFmaQmmCzXrrTuu/mxZi0ZZl8KMU=
