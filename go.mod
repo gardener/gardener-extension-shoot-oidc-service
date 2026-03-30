@@ -4,6 +4,7 @@ go 1.25.6
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
+	github.com/gardener/garden-shoot-trust-configurator v0.1.0
 	github.com/gardener/gardener v1.139.0
 	github.com/gardener/gardener/pkg/apis v1.139.0
 	github.com/go-logr/logr v1.4.3

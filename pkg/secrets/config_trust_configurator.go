@@ -14,36 +14,34 @@ import (
 )
 
 const (
-	// ManagerIdentity is the identity used for the secrets manager.
-	ManagerIdentity = "extension-" + constants.ExtensionType
-	// ManagerIdentityRuntime is the identity used for the secrets manager when extension is with class garden.
-	ManagerIdentityRuntime = "extension-" + constants.ExtensionType + "-runtime"
-	// CAName is the name of the CA secret.
-	CAName = "ca-extension-" + constants.ExtensionType
+	// ManagerIdentityShootTrustRuntime is the identity used for the secrets manager when extension is with class garden.
+	ManagerIdentityShootTrustRuntime = "extension-" + constants.GardenShootTrustConfiguratorExtensionType + "-runtime"
+	// ShootTrustCAName is the name of the CA secret.
+	ShootTrustCAName = "ca-extension-" + constants.GardenShootTrustConfiguratorExtensionType
 )
 
-// ConfigsFor returns configurations for the secrets manager for the given namespace.
-func ConfigsFor(namespace string) []extensionssecretsmanager.SecretConfigWithOptions {
+// ShootTrustConfigsFor returns configurations for the secrets manager for the given namespace.
+func ShootTrustConfigsFor(namespace string) []extensionssecretsmanager.SecretConfigWithOptions {
 	return []extensionssecretsmanager.SecretConfigWithOptions{
 		{
 			Config: &secretutils.CertificateSecretConfig{
-				Name:       CAName,
-				CommonName: CAName,
+				Name:       ShootTrustCAName,
+				CommonName: ShootTrustCAName,
 				CertType:   secretutils.CACert,
 			},
 			Options: []secretsmanager.GenerateOption{secretsmanager.Persist()},
 		},
 		{
 			Config: &secretutils.CertificateSecretConfig{
-				Name:                        constants.WebhookTLSSecretName,
-				CommonName:                  constants.ApplicationName,
-				DNSNames:                    kutil.DNSNamesForService(constants.ApplicationName, namespace),
+				Name:                        constants.GardenShootTrustConfiguratorWebhookTLSSecretName,
+				CommonName:                  constants.GardenShootTrustConfiguratorApplicationName,
+				DNSNames:                    kutil.DNSNamesForService(constants.GardenShootTrustConfiguratorApplicationName, namespace),
 				CertType:                    secretutils.ServerCert,
 				SkipPublishingCACertificate: true,
 			},
 			// use current CA for signing server cert to prevent mismatches when dropping the old CA from the webhook
 			// config in phase Completing
-			Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(CAName, secretsmanager.UseCurrentCA)},
+			Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(ShootTrustCAName, secretsmanager.UseCurrentCA)},
 		},
 	}
 }
