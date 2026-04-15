@@ -1,0 +1,15 @@
+ocm:
+  component_name: github.com/gardener/garden-shoot-trust-configurator
+  component_version: v0.2.0
+release_notes:
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: theoddora
+  category: feature
+  contents: Introduced a skaffold setup that enables deploying the trust-configurator
+    in a local cluster.
+  mimetype: text/markdown
+  reference: '[#106](https://github.com/gardener/garden-shoot-trust-configurator/pull/106)'
+  type: standard
