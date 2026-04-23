@@ -42,9 +42,6 @@ const (
 	// initialOIDCReplicaCount is the initial number of OIDC webhook replicas
 	initialOIDCReplicaCount int32 = 2
 
-	// fakeTokenSecretName is a temporary constant for a secret that was used in older versions
-	fakeTokenSecretName = constants.ApplicationName + "-fake-token" // <- TODO: remove this constant in a future release
-
 	// virtualGardenPrefix is the prefix for virtual garden deployments
 	virtualGardenPrefix = "virtual-garden-"
 )
@@ -175,11 +172,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	// TODO: remove this in a future release
-	if err := a.deleteSecret(ctx, fakeTokenSecretName, clusterCtx.namespace); err != nil {
-		return err
-	}
-
 	return clusterCtx.secretsManager.Cleanup(ctx)
 }
 
@@ -286,14 +278,8 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, ex *extensionsv1
 		return err
 	}
 
-	for _, name := range []string{
-		gutil.SecretNamePrefixShootAccess + constants.TokenValidator, // <- TODO: remove the secret name in a future version
-		gutil.SecretNamePrefixShootAccess + constants.ApplicationName,
-		fakeTokenSecretName, // <- TODO: remove the secret name in a future release
-	} {
-		if err := a.deleteSecret(ctx, name, namespace); err != nil {
-			return err
-		}
+	if err := a.deleteSecret(ctx, gutil.SecretNamePrefixShootAccess+constants.ApplicationName, namespace); err != nil {
+		return err
 	}
 
 	if skipSecretsManagerSecrets {
