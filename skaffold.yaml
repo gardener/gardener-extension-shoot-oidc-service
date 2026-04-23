@@ -6,7 +6,6 @@ metadata:
 build:
   insecureRegistries:
     - registry.local.gardener.cloud:5001
-    - garden.local.gardener.cloud:5001 # TODO(vpnachev): Remove after github.com/gardener/gardener v1.137.0 has been released.
   tagPolicy:
     customTemplate:
       template: "{{.version}}-{{.sha}}"
