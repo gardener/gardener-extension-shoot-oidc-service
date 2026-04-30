@@ -28,7 +28,6 @@ build:
             - imagevector/images.yaml
             - pkg/cmd
             - pkg/constants
-            - pkg/controller/healthcheck
             - pkg/controller/lifecycle
             - pkg/controller/lifecycle/templates/authentication.gardener.cloud_openidconnects.yaml
             - pkg/controller/trustconfigurator
