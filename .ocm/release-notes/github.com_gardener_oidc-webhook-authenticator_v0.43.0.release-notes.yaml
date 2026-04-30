@@ -1,0 +1,36 @@
+ocm:
+  component_name: github.com/gardener/oidc-webhook-authenticator
+  component_version: v0.43.0
+release_notes:
+- audience: dependency
+  author:
+    hostname: github.com
+    type: githubUser
+    username: dimityrmirchev
+  category: other
+  contents: |-
+    The following third party dependencies have been updated:
+    - github.com/go-jose/go-jose/v4 v4.1.2 -> v4.1.3
+    - github.com/onsi/ginkgo/v2 v2.27.2 -> v2.27.4
+    - github.com/onsi/gomega v1.38.2 -> v1.39.0
+    - github.com/spf13/cobra v1.10.1 -> v1.10.2
+    - golang.org/x/time v0.13.0 -> v0.14.0
+    - k8s.io/api v0.35.0 -> v0.36.0
+    - k8s.io/apimachinery v0.35.0 -> v0.36.0
+    - k8s.io/apiserver v0.35.0 -> v0.36.0
+    - k8s.io/client-go v0.35.0 -> v0.36.0
+    - k8s.io/component-base v0.35.0 -> v0.36.0
+    - sigs.k8s.io/controller-runtime v0.23.3 -> v0.24.0
+  mimetype: text/markdown
+  reference: '[#234](https://github.com/gardener/oidc-webhook-authenticator/pull/234)'
+  type: standard
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: dependabot[bot]
+  category: other
+  contents: OWA is now built with Go 1.26.2
+  mimetype: text/markdown
+  reference: '[#231](https://github.com/gardener/oidc-webhook-authenticator/pull/231)'
+  type: standard
