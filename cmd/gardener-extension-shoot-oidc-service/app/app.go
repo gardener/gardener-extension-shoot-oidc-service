@@ -108,12 +108,15 @@ func (o *Options) run(ctx context.Context, log logr.Logger) error {
 	}
 
 	o.lifecycleOptions.Completed().Apply(&lifecycle.DefaultAddOptions.ControllerOptions)
-	o.reconcileOptions.Completed().Apply(&lifecycle.DefaultAddOptions.IgnoreOperationAnnotation, &lifecycle.DefaultAddOptions.ExtensionClasses)
-	o.reconcileOptions.Completed().Apply(&trustconfigurator.DefaultAddOptions.IgnoreOperationAnnotation, &trustconfigurator.DefaultAddOptions.ExtensionClasses)
+	o.reconcileOptions.Completed().Apply(&lifecycle.DefaultAddOptions.IgnoreOperationAnnotation)
+	o.reconcileOptions.Completed().Apply(&trustconfigurator.DefaultAddOptions.IgnoreOperationAnnotation)
 	o.trustConfiguratorOptions.Completed().Apply(&trustconfigurator.DefaultAddOptions)
 	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
 	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
-	webhook.DefaultAddOptions.ExtensionClasses = o.reconcileOptions.Completed().ExtensionClasses
+
+	lifecycle.DefaultAddOptions.ExtensionClasses = o.generalOptions.Completed().ExtensionClasses
+	trustconfigurator.DefaultAddOptions.ExtensionClasses = o.generalOptions.Completed().ExtensionClasses
+	webhook.DefaultAddOptions.ExtensionClasses = o.generalOptions.Completed().ExtensionClasses
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
 		return fmt.Errorf("could not add controllers to manager: %s", err)

@@ -90,11 +90,10 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	}
 
 	webhook := &extensionswebhook.Webhook{
-		Name:     Name,
-		Provider: "",
-		Types:    types,
-		Target:   extensionswebhook.TargetSeed,
-		Path:     "oidc",
+		Name:   Name,
+		Types:  types,
+		Target: extensionswebhook.TargetSeed,
+		Path:   "oidc",
 		Webhook: &admission.Webhook{
 			Handler: handler,
 		},

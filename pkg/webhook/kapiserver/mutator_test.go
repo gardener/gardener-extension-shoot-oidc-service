@@ -16,11 +16,10 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
-	mockmanager "github.com/gardener/gardener/third_party/mock/controller-runtime/manager"
+	"github.com/gardener/gardener/pkg/utils/test"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,8 +42,6 @@ var _ = Describe("Mutator", func() {
 	var (
 		ctx        = context.Background()
 		fakeClient client.Client
-		ctrl       *gomock.Controller
-		mgr        *mockmanager.MockManager
 
 		oidcAuthenticatorKubeConfigVolumeMount = corev1.VolumeMount{
 			Name:      oidcAuthenticatorKubeConfigVolumeName,
@@ -153,9 +150,7 @@ var _ = Describe("Mutator", func() {
 			}
 
 			logger = log.Log.WithName("oidc-kapiserver-webhook")
-			ctrl = gomock.NewController(GinkgoT())
-			mgr = mockmanager.NewMockManager(ctrl)
-			mgr.EXPECT().GetClient().Return(fakeClient)
+			mgr := test.FakeManager{Client: fakeClient}
 			ensurer = NewEnsurer(mgr, logger, secrets.ManagerIdentity)
 		})
 
