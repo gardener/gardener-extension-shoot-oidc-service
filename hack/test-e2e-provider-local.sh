@@ -20,21 +20,16 @@ repo_root="$(readlink -f $(dirname ${0})/..)"
 gardener_version=$(go list -m -f '{{.Version}}' github.com/gardener/gardener)
 
 if [[ ! -d "$repo_root/gardener" ]]; then
-  git clone https://github.com/gardener/gardener.git
-  cd "$repo_root/gardener"
+  git clone --depth 1 --branch $gardener_version https://github.com/gardener/gardener.git
 else
-  cd "$repo_root/gardener"
-  git fetch
+  git -C "$repo_root/gardener" fetch --depth 1 --tags origin "$gardener_version"
+  git -C checkout "$gardener_version"
 fi
 
 ensure_glgc_resolves_to_localhost
 
-git checkout "$gardener_version"
-make kind-up
-export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
-make gardener-up
-
-cd $repo_root
+make -C "$repo_root/gardener" kind-up gardener-up
+export KUBECONFIG="$repo_root/gardener/dev-setup/kubeconfigs/virtual-garden/kubeconfig"
 
 version=$(git rev-parse HEAD)
 docker build --tag shoot-oidc-service-local:$version $repo_root
