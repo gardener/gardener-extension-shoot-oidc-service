@@ -23,7 +23,7 @@ if [[ ! -d "$repo_root/gardener" ]]; then
   git clone --depth 1 --branch $gardener_version https://github.com/gardener/gardener.git
 else
   git -C "$repo_root/gardener" fetch --depth 1 --tags origin "$gardener_version"
-  git -C checkout "$gardener_version"
+  git -C "$repo_root/gardener" checkout "$gardener_version"
 fi
 
 ensure_glgc_resolves_to_localhost
