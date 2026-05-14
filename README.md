@@ -1,4 +1,4 @@
-# [Gardener Extension for openid connect services](https://gardener.cloud)
+# Gardener Extension for openid connect services
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-shoot-oidc-service)](https://api.reuse.software/info/github.com/gardener/gardener-extension-shoot-oidc-service)
 [![Build](https://github.com/gardener/gardener-extension-shoot-oidc-service/actions/workflows/non-release.yaml/badge.svg)](https://github.com/gardener/gardener-extension-shoot-oidc-service/actions/workflows/non-release.yaml)
