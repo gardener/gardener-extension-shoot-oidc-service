@@ -73,7 +73,6 @@ spec:
           allowPrivilegeEscalation: false
         args:
         - --lifecycle-max-concurrent-reconciles={{ .Values.controllers.lifecycle.concurrentSyncs }}
-        - --healthcheck-max-concurrent-reconciles={{ .Values.controllers.healthcheck.concurrentSyncs }}
         - --trust-configurator-max-concurrent-reconciles={{ .Values.controllers.trustConfigurator.concurrentSyncs }}
         - --trust-configurator-oidc-audiences={{ .Values.controllers.trustConfigurator.oidcConfig.audiences | join "," }}
         - --trust-configurator-oidc-max-token-expiration={{ .Values.controllers.trustConfigurator.oidcConfig.maxTokenExpiration }}
@@ -89,7 +88,6 @@ spec:
         - --health-bind-address=:{{ .Values.healthPort }}
         {{- if .Values.gardener.runtimeCluster.enabled }}
         - --extension-classes=garden
-        - --disable-controllers=healthcheck
         {{- else }}
         - --extension-classes=shoot
         - --disable-controllers=garden-shoot-trust-configurator
