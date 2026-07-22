@@ -368,7 +368,7 @@ func getSourceResources(oidcConfig trustconfigv1alpha1.OIDCConfig, namespace, ge
 				Name:       constants.GardenShootTrustConfiguratorApplicationName,
 			},
 			UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
-				UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeRecreate),
+				UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeInPlaceOrRecreate),
 			},
 			ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
 				ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{{
