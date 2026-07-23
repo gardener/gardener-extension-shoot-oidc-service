@@ -12,11 +12,13 @@ updates:
   allow:
   - dependency-name: "github.com/gardener/gardener"
   - dependency-name: "github.com/gardener/gardener/pkg/apis"
+  - dependency-name: "github.com/gardener/gardener/hack/tools"
   groups:
     gardener:
       patterns:
         - "github.com/gardener/gardener"
         - "github.com/gardener/gardener/pkg/apis"
+        - "github.com/gardener/gardener/hack/tools"
 - package-ecosystem: docker
   directories:
   - /
