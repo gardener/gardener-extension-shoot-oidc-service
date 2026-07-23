@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SPDX-FileCopyrightText: 2022 SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -19,8 +19,8 @@ ensure_glgc_resolves_to_localhost() {
 repo_root="$(readlink -f $(dirname ${0})/..)"
 gardener_version=$(go list -m -f '{{.Version}}' github.com/gardener/gardener)
 
-if [[ ! -d "$repo_root/gardener" ]]; then
-  git clone --depth 1 --branch $gardener_version https://github.com/gardener/gardener.git
+if [[ ! -d "$repo_root/gardener" ]] || [[ "$(cat "$repo_root/gardener/VERSION" 2>/dev/null)" != "$gardener_version" ]]; then
+  git clone --depth 1 --branch $gardener_version https://github.com/gardener/gardener.git "$repo_root/gardener"
 else
   git -C "$repo_root/gardener" fetch --depth 1 --tags origin "$gardener_version"
   git -C "$repo_root/gardener" checkout "$gardener_version"

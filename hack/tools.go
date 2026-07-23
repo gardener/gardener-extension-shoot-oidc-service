@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,10 +9,5 @@
 package tools
 
 import (
-	_ "github.com/gardener/gardener/hack"
-	_ "github.com/gardener/gardener/hack/.ci"
-	_ "github.com/gardener/gardener/hack/tools/report-collector"
-
-	_ "golang.org/x/tools/cmd/goimports"
-	_ "k8s.io/code-generator"
+	_ "github.com/gardener/gardener/hack/tools"
 )
