@@ -25,11 +25,9 @@ build:
             - cmd/gardener-extension-shoot-oidc-service
             - cmd/gardener-extension-shoot-oidc-service/app
             - imagevector
-            - imagevector/images.yaml
             - pkg/cmd
             - pkg/constants
             - pkg/controller/lifecycle
-            - pkg/controller/lifecycle/templates/authentication.gardener.cloud_openidconnects.yaml
             - pkg/controller/trustconfigurator
             - pkg/secrets
             - pkg/webhook/kapiserver
@@ -55,6 +53,6 @@ resourceSelector:
 manifests:
   kustomize:
     paths:
-    - example/local-setup
+      - example/local-setup
 deploy:
   kubectl: {}
