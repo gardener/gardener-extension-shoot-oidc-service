@@ -1,11 +1,18 @@
 name: Prepare Release
+description: Prepare release, usually by running the code generation.
 
 runs:
   using: composite
   steps:
-    - uses: actions/setup-go@v5
+    - name: get-go-version
+      id: go-version
+      shell: bash
+      run: |
+        version=$(grep -oP 'FROM.*golang:\K[0-9]+\.[0-9]+\.[0-9]+' Dockerfile)
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+    - uses: actions/setup-go@v7
       with:
-        go-version: 'stable'
+        go-version: ${{ steps.go-version.outputs.version }}
     - name: make-generate
       shell: bash
       run: |
