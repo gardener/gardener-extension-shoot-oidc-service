@@ -9,10 +9,16 @@ jobs:
     name: Run make tidy
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v7
+    - name: get-go-version
+      id: go-version
+      shell: bash
+      run: |
+        version=$(grep -oP 'FROM.*golang:\K[0-9]+\.[0-9]+\.[0-9]+' Dockerfile)
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+    - uses: actions/setup-go@v7
       with:
-        go-version-file: go.mod
+        go-version: ${{ steps.go-version.outputs.version }}
 
     - name: Make tidy
       run: make tidy
@@ -27,5 +33,5 @@ jobs:
         git config user.name gardener-robot-ci-1
         git config user.email gardener.ci.user@gmail.com
         git add .
-        git commit -m "[dependabot skip] make tidy"
+        git commit --signoff -m "[dependabot skip] make tidy"
         git push origin
