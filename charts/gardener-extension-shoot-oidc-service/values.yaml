@@ -51,9 +51,7 @@ vpa:
 
 gardener:
   version: ""
-  runtimeCluster: {}
-  clusterTypes:
-    gardenRuntimeCluster: false
+  # runtimeCluster: {} # Presence of the 'runtimeCluster' object is used to identify if the extension controller is being deployed for the the Garden or Shoot extension, do not set it in default values, let gardener manage this object.
 
 healthPort: 8081
 

@@ -86,8 +86,8 @@ spec:
         - --gardener-version={{ .Values.gardener.version }}
         - --metrics-bind-address=:{{ .Values.metrics.port }}
         - --health-bind-address=:{{ .Values.healthPort }}
-        {{- /* TODO(vpnachev): Remove gardener.runtimeCluster.enabled, replaced by gardener.clusterTypes.gardenRuntimeCluster, it will be no longer supported by Gardener after v1.159.0 is released. */}}
-        {{- if (or .Values.gardener.clusterTypes.gardenRuntimeCluster .Values.gardener.runtimeCluster.enabled)}}
+        {{- /* TODO(vpnachev): Remove gardener.runtimeCluster.enabled, replaced by gardener.runtimeCluster, it will be no longer supported by Gardener after v1.159.0 is released. */}}
+        {{- if (or .Values.gardener.runtimeCluster (.Values | merge (dict) | dig "gardener" "runtimeCluster" "enabled" false)) }}
         - --extension-classes=garden
         {{- else }}
         - --extension-classes=shoot
