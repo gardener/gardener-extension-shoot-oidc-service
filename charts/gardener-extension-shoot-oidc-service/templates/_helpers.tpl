@@ -15,8 +15,8 @@ extension-shoot-oidc-service-leader-election
 {{- end -}}
 
 {{- define "name" -}}
-{{- /* TODO(vpnachev): Remove gardener.runtimeCluster.enabled, replaced by gardener.clusterTypes.gardenRuntimeCluster, it will be no longer supported by Gardener after v1.159.0 is released. */}}
-{{- if (or .Values.gardener.clusterTypes.gardenRuntimeCluster .Values.gardener.runtimeCluster.enabled) -}}
+{{- /* TODO(vpnachev): Remove gardener.runtimeCluster.enabled, replaced by gardener.runtimeCluster, it will be no longer supported by Gardener after v1.159.0 is released. */}}
+{{- if (or .Values.gardener.runtimeCluster (.Values | merge (dict) | dig "gardener" "runtimeCluster" "enabled" false)) -}}
 shoot-oidc-service-runtime
 {{- else -}}
 shoot-oidc-service
