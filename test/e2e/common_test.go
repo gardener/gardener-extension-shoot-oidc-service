@@ -58,8 +58,8 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			CloudProfile: &gardencorev1beta1.CloudProfileReference{
 				Name: "local",
 			},
-			SecretBindingName: ptr.To("local"),
-			Region:            "local",
+			CredentialsBindingName: new("local"),
+			Region:                 "local",
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.32.0",
 				Kubelet: &gardencorev1beta1.KubeletConfig{

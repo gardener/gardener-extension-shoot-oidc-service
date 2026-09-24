@@ -10,7 +10,7 @@ spec:
   - type: shoot-oidc-service
   cloudProfile:
     name: local
-  secretBindingName: local # dummy, doesn't contain any credentials
+  credentialsBindingName: local # dummy, doesn't contain any credentials
   region: local
   networking:
     type: calico
