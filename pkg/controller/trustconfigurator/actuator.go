@@ -81,7 +81,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	gardenAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.GardenShootTrustConfiguratorApplicationName, namespace)
+	gardenAccessSecret := gutil.NewGardenAccessSecret(gutil.SecretNamePrefixShootAccess+constants.GardenShootTrustConfiguratorApplicationName, namespace)
 	if err := gardenAccessSecret.Reconcile(ctx, a.client); err != nil {
 		return err
 	}
