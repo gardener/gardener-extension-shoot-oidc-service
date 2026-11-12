@@ -8,3 +8,5 @@ spec:
       helm:
         ociRepository:
           ref: local-skaffold/gardener-extension-shoot-oidc-service/charts/extension
+          caBundleSecretRef:
+            name: gardener-local-registry-ca
