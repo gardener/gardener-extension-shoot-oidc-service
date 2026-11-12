@@ -66,6 +66,7 @@ type clusterContext struct {
 	genericTokenKubeconfigName  string
 	kubeAPIServerDeploymentName string
 	secretsManager              secretsmanager.Interface
+	newAccessSecret             func(string, string) *gutil.AccessSecret
 }
 
 // Reconcile the Extension resource.
@@ -91,8 +92,8 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("unsupported extension class: %s", extensionClass)
 	}
 
-	oidcShootAccessSecret := gutil.NewShootAccessSecret(gutil.SecretNamePrefixShootAccess+constants.ApplicationName, clusterCtx.namespace)
-	if err := oidcShootAccessSecret.Reconcile(ctx, a.client); err != nil {
+	oidcAccessSecret := clusterCtx.newAccessSecret(constants.ApplicationName, clusterCtx.namespace)
+	if err := oidcAccessSecret.Reconcile(ctx, a.client); err != nil {
 		return err
 	}
 
@@ -116,7 +117,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		oidcReplicas,
 		clusterCtx.namespace,
 		clusterCtx.genericTokenKubeconfigName,
-		oidcShootAccessSecret.Secret.Name,
+		oidcAccessSecret.Secret.Name,
 		generatedSecrets[constants.WebhookTLSSecretName].Name,
 		clusterCtx.kubeAPIServerDeploymentName,
 		extensionClass,
@@ -128,7 +129,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 	shootResources, err := getShootResources(
 		caBundleSecret.Data[secretsutils.DataKeyCertificateBundle],
 		clusterCtx.namespace,
-		oidcShootAccessSecret.ServiceAccountName,
+		oidcAccessSecret.ServiceAccountName,
 	)
 	if err != nil {
 		return err
@@ -204,6 +205,7 @@ func (a *actuator) buildShootClusterContext(ctx context.Context, log logr.Logger
 		kubeAPIServerDeploymentName: v1beta1constants.DeploymentNameKubeAPIServer,
 		hibernated:                  controller.IsHibernationEnabled(cluster),
 		secretsManager:              secretsManager,
+		newAccessSecret:             gutil.NewShootAccessSecret,
 	}, nil
 }
 
@@ -242,6 +244,7 @@ func (a *actuator) buildGardenClusterContext(ctx context.Context, log logr.Logge
 		kubeAPIServerDeploymentName: virtualGardenPrefix + v1beta1constants.DeploymentNameKubeAPIServer,
 		hibernated:                  false,
 		secretsManager:              secretsManager,
+		newAccessSecret:             gutil.NewGardenAccessSecret,
 	}, nil
 }
 
